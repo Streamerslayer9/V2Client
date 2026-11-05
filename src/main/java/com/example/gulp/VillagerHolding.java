@@ -110,6 +110,17 @@ public final class VillagerHolding {
         return n;
     }
 
+    /**
+     * Gives the villager a belly: tells everyone who can see them how full their tummy is, from how many players they hold
+     * (0 = no belly). The same BellyPacket players use; the client draws it with VillagerBellyLayer.
+     */
+    static void syncBelly(Entity villager) {
+        if (villager == null || villager.level().isClientSide) return;
+        int n = holdingCount(villager.getUUID());
+        float ratio = n <= 0 ? 0f : Math.min(1f, 0.45f + 0.55f * n / Math.max(1, capacityOf(villager)));
+        Net.CHANNEL.send(PacketDistributor.TRACKING_ENTITY.with(() -> villager), new BellyPacket(villager.getUUID(), ratio));
+    }
+
     /** True when the villager is holding as many players as they can. */
     static boolean isFull(Entity villager) {
         return holdingCount(villager.getUUID()) >= capacityOf(villager);
@@ -309,6 +320,7 @@ public final class VillagerHolding {
         hold.forced = forced;
         hold.hostile = hostile;
         HELD.put(p.getUUID(), hold);
+        syncBelly(villager); // the villager gets a belly
         if (hostile) { /* remembered by McaIntegration.tickHostile */ } else if (forced == null) McaIntegration.remember(villager, p.getUUID(), cuddle ? "gulp.cuddled" : "gulp.comforted"); // history: it makes them warmer next time
         p.getPersistentData().putInt(PlayerHolding.KEY_PREV_MODE, previous); // survives a crash
         p.setGameMode(GameType.SPECTATOR);
@@ -361,6 +373,7 @@ public final class VillagerHolding {
             p.sendSystemMessage(Component.literal("<").append(v.getName()).append("> " + (h.cuddle ? McaIntegration.traitOf(v).cuddleHoldLine() : McaIntegration.traitOf(v).holdLine())));
         }
         if (p.getCamera() != v) p.setCamera(v); // pressing sneak would make a spectator stop looking through their eyes
+        if (h.ticks % 40 == 1) syncBelly(v); // refreshed now and then so anyone who walks up sees the belly too
         int level = levelOf(v);
         VillagerTrait trait = McaIntegration.traitOf(v);
         float scale = h.hostile ? 0f : h.forced == null ? 1f : h.forced.healScale(); // a villager who did not ask for you heals you less, or not at all
@@ -481,6 +494,7 @@ public final class VillagerHolding {
                 }
             }
         }
+        syncBelly(villager); // one less player inside: the belly shrinks (or goes away)
         Net.CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), new HeldPacket(0, "", 0f, 0f));
         p.sendSystemMessage(Component.literal(message));
         if (villager != null && message.equals("You climbed out.")) {

@@ -124,4 +124,32 @@ public final class McaSkins {
             return null;
         }
     }
+
+    /**
+     * The textures MCA is drawing on a villager (an MCA mob, not a player) right now: skin first, then clothing. Null when the villager
+     * has a custom skin or MCA's layers can't be read, then the belly uses the renderer's own texture.
+     */
+    public static List<Pass> villagerPasses(Entity villager, List<Object> mcaLayers, float partialTick) {
+        if (mcaLayers == null || mcaLayers.isEmpty() || !ready()) return null;
+        try {
+            Method hasCustomSkin = HAS_CUSTOM_SKIN.computeIfAbsent(villager.getClass(), c -> {
+                try {
+                    return byName(c, "hasCustomSkin", 0);
+                } catch (NoSuchMethodException e) {
+                    return null;
+                }
+            });
+            if (hasCustomSkin != null && (Boolean) hasCustomSkin.invoke(villager)) return null;
+            List<Pass> passes = new ArrayList<>();
+            for (Object layer : mcaLayers) {
+                Object texture = getSkin.invoke(layer, villager);
+                if (!(texture instanceof ResourceLocation location) || !(Boolean) canUse.invoke(layer, location)) continue;
+                float[] color = (float[]) getColor.invoke(layer, villager, partialTick);
+                passes.add(new Pass(location, color[0], color[1], color[2], clothingLayerClass.isInstance(layer)));
+            }
+            return passes;
+        } catch (Throwable t) {
+            return null;
+        }
+    }
 }

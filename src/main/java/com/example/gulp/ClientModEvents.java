@@ -6,8 +6,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
@@ -15,6 +17,8 @@ import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.settings.KeyConflictContext;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.lwjgl.glfw.GLFW;
@@ -81,6 +85,25 @@ public final class ClientModEvents {
             EntityRenderer<? extends Player> renderer = e.getSkin(skin);
             if (renderer instanceof PlayerRenderer playerRenderer) {
                 playerRenderer.addLayer(new BellyLayer(playerRenderer, e.getEntityModels()));
+            }
+        }
+        addVillagerBellies(e);
+    }
+
+    /** Minecraft Comes Alive villagers get a belly too while they hold a player (see VillagerBellyLayer). Does nothing without MCA. */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void addVillagerBellies(EntityRenderersEvent.AddLayers e) {
+        if (!ModList.get().isLoaded("mca")) return;
+        for (EntityType<?> type : ForgeRegistries.ENTITY_TYPES.getValues()) {
+            ResourceLocation key = ForgeRegistries.ENTITY_TYPES.getKey(type);
+            if (key == null || !"mca".equals(key.getNamespace())) continue;
+            try {
+                Object renderer = e.getRenderer((EntityType) type);
+                if (renderer instanceof LivingEntityRenderer living) {
+                    living.addLayer(new VillagerBellyLayer(living, e.getEntityModels()));
+                }
+            } catch (Throwable t) {
+                // an MCA entity without a normal renderer: it just gets no belly
             }
         }
     }
