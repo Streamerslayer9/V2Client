@@ -163,13 +163,12 @@ public class StyleScreen extends Screen {
         g.drawString(font, "Stomach wall", x + 15, y + 22, 0xFFCCCCCC, false);
         g.drawString(font, "Digestive acid", x + 15, y + 102 + 0, 0xFFCCCCCC, false);
 
-        // Live preview of the wall with the chosen pattern, and a strip of acid.
+        // Live preview of the box: wall and pattern on top, the animated acid pool in the bottom half.
         int px = x + 15 + 150 + 12, pw = W - 177 - 10;
-        StomachStyle.paintWall(g, px, y + 30, pw, 60);
-        g.drawCenteredString(font, "Wall", px + pw / 2, y + 56, 0xFFFFFFFF);
-        g.fill(px, y + 112, px + pw, y + 126, 0xFF222222);
-        g.fill(px, y + 112, px + pw * 2 / 3, y + 126, StomachStyle.acidArgb());
-        g.drawCenteredString(font, "Acid", px + pw / 2, y + 115, 0xFFFFFFFF);
+        StomachStyle.paintWall(g, px, y + 30, pw, 120);
+        StomachStyle.paintAcid(g, px + 1, y + 90, pw - 2, 59);
+        g.drawCenteredString(font, "Wall", px + pw / 2, y + 50, 0xFFFFFFFF);
+        g.drawCenteredString(font, "Acid", px + pw / 2, y + 120, 0xFFFFFFFF);
 
         // Swatch colours (drawn over the blank buttons).
         super.render(g, mouseX, mouseY, partialTick);

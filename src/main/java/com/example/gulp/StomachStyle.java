@@ -85,6 +85,37 @@ public final class StomachStyle {
         g.fill(x + w - 1, y, x + w, y + h, border);
     }
 
+    /**
+     * Draws the digestive acid: an animated wavy pool filling the area (x, y, w, h), meant for the bottom half of the box.
+     * Two waves drift at different speeds, the surface is a brighter line, and a few pixel bubbles rise through it.
+     */
+    public static void paintAcid(GuiGraphics g, int x, int y, int w, int h) {
+        if (w <= 0 || h <= 4) return;
+        int rgb = acidArgb() & 0xFFFFFF;
+        int body = 0x88000000 | rgb;
+        int deep = 0x55000000 | (rgb >> 1 & 0x7F7F7F); // a darker second layer behind
+        int shine = 0xCC000000 | lighten(rgb, 0.5f);
+        double t = (System.currentTimeMillis() % 100000L) / 1000.0;
+        int bottom = y + h;
+        for (int px = 0; px < w; px += 2) {
+            int cw = Math.min(2, w - px);
+            // back wave
+            int backTop = y + 3 + (int) Math.round(Math.sin(px * 0.09 - t * 1.1) * 2.5);
+            g.fill(x + px, backTop, x + px + cw, bottom, deep);
+            // front wave
+            int frontTop = y + 5 + (int) Math.round(Math.sin(px * 0.14 + t * 1.8) * 2.0 + Math.sin(px * 0.31 + t * 0.9));
+            g.fill(x + px, frontTop, x + px + cw, bottom, body);
+            g.fill(x + px, frontTop, x + px + cw, frontTop + 1, shine);
+        }
+        // pixel bubbles rising
+        for (int i = 0; i < 8; i++) {
+            double cycle = (t * 0.25 + i * 0.37) % 1.0;
+            int bx = x + 6 + (int) ((i * 53 + 17) % Math.max(1, w - 12));
+            int by = bottom - 3 - (int) (cycle * (h - 12));
+            g.fill(bx, by, bx + 2, by + 2, 0x66000000 | lighten(rgb, 0.7f));
+        }
+    }
+
     private static void drawPattern(GuiGraphics g, int x, int y, int w, int h, Pattern pattern) {
         if (pattern == Pattern.NONE || w <= 0 || h <= 0) return;
         int ink = 0x30000000 | lighten(wallBase(), 0.55f); // faint, so rows and buttons stay readable on top
