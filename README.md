@@ -184,6 +184,10 @@ reactions switch themselves off with one line in the log.
   with MCA's own skin texture (with the villager's skin tone) and clothing texture, in MCA's order, so the outfit grows with
   the belly instead of the normal Minecraft skin poking through it. Players who aren't using MCA's villager look get the
   normal belly. (McaSkins.java; MCA's clothing sits further out than its skin, so the clothing pass uses slightly bigger meshes.)
+- Villager bellies: while an MCA villager holds a player in their tummy (comfort, cuddle, Climb In, an angry grab), the villager gets a belly
+  that grows with how many players they hold compared to what they can hold (Roomy Belly), and shrinks again when the player is out. It
+  is drawn with MCA's own skin and outfit like the player belly, follows the Settings belly style (and Off), and is client-side only apart
+  from the villager's fullness being sent with the normal belly packet. Code: VillagerHolding.syncBelly, VillagerBellyLayer.
 - Digesting a villager also triggers MCA's own death rules (witnesses lose hearts, family grieves, a headstone may appear).
 - Predator status: swallowing a villager adds to it (hard 15, soft 3; digesting adds about 25; fans count for less) and it
   fades by 1 every 20 seconds. It is shown on the stomach screen. At 30 or more, villagers who are afraid of you refuse to
@@ -487,3 +491,18 @@ Replace logo.png with your own 256x256 art any time.
 - **Prey view** (swallowed players): press H (rebindable, "Swallowed: Pred View / Inside the Stomach") to switch between what the
   swallower sees and the inside of the stomach: the wall in the colour and pattern you picked in Stomach look, with the animated acid
   pool at the level you set. It uses your own Stomach look settings. Client-side only; each new swallow starts in the swallower's view.
+- **Per-place looks**: Settings > Stomach look now has a tab for the Stomach, Breast, Cock and Unbirth, each with its own wall colour,
+  wall pattern, acid colour and acid fullness (the tail leads to the stomach, so it uses the stomach's). The stomach screen shows the look
+  of the tab you have open. Saved in config/gulp-client.properties (stomach keys unchanged, the others start with "breast.", "cock.",
+  "unbirth."). The swallowed player's inside view uses the stomach's look. Code: Look, StomachStyle, StyleScreen.
+- **Padded Sac** (perk, 5 ranks, level 50): prey struggling in your cock hurt you 20% less per rank (not at all at rank 5); from rank 3 you
+  also get Resistance while the cock holds prey.
+- **Long Tail** (perk, 5 ranks, level 25): +0.75 blocks of swallow reach per rank, only while the tail is the selected vore type.
+- **Brood Mother** (perk, 3 ranks, level 60): mobs digested in the unbirth can drop their spawn egg (40% / 70% / always). Without the
+  perk they give their normal loot.
+- **Butter Churn** (perk, 3 ranks, level 30): lets the Breast Milk churn into Butter (hard mode); rank 2 is 25% faster, rank 3 twice as fast.
+  Without it the milk stays milk. Network protocol is now 14.
+- **CPM-gated vore types**: Breast, Cock, Unbirth and Tail only show up (stomach screen tabs, Stomach look tabs) when your Custom Player
+  Model has a matching animation: breast/breasts, cock/balls, unbirth/womb, tail/tail_vore (also capitalised). The mod adds no model
+  parts; the player brings a compatible model. The place you are currently swallowing into always stays available. Set requireCpmModel=false
+  in config/gulp-client.properties to always show them. Checked on the player's own client, so servers do not enforce it.
