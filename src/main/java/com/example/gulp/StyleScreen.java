@@ -1,0 +1,182 @@
+package com.example.gulp;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractSliderButton;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+
+import java.util.function.Consumer;
+
+/**
+ * Settings > Stomach look. Pick the colour of the stomach wall and of the digestive acid with a hue slider, a shade slider
+ * and a row of quick colour swatches, and choose a pattern for the wall. The preview on the right updates as you drag.
+ * Everything is saved to config/gulp-client.properties and is client-side only.
+ */
+public class StyleScreen extends Screen {
+    private static final int W = 250;
+    private static final int H = 224;
+
+    /** The quick colour picker: click a swatch to jump the hue slider to it. */
+    private static final float[] SWATCH_HUES = {0.0f, 0.06f, 0.12f, 0.33f, 0.50f, 0.60f, 0.75f, 0.90f};
+
+    private final int[] swatchX = new int[SWATCH_HUES.length];
+    private Button patternButton;
+
+    public StyleScreen() {
+        super(Component.literal("Stomach look"));
+    }
+
+    private int left() { return (width - W) / 2; }
+    private int top() { return (height - H) / 2; }
+
+    /** A 0-1 slider. The hue one draws a rainbow behind its handle. */
+    private static final class Slider extends AbstractSliderButton {
+        private final String name;
+        private final boolean rainbow;
+        private final Consumer<Float> setter;
+
+        Slider(int x, int y, int w, String name, boolean rainbow, float start, Consumer<Float> setter) {
+            super(x, y, w, 14, Component.empty(), start);
+            this.name = name;
+            this.rainbow = rainbow;
+            this.setter = setter;
+            updateMessage();
+        }
+
+        void set(float v) {
+            this.value = Math.max(0f, Math.min(1f, v));
+            applyValue();
+            updateMessage();
+        }
+
+        @Override
+        protected void updateMessage() {
+            setMessage(Component.literal(name + ": " + Math.round(this.value * 100) + "%"));
+        }
+
+        @Override
+        protected void applyValue() {
+            setter.accept((float) this.value);
+        }
+
+        @Override
+        public void onRelease(double mouseX, double mouseY) {
+            super.onRelease(mouseX, mouseY);
+            GulpConfig.save();
+        }
+
+        @Override
+        public void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+            int x = getX(), y = getY(), w = getWidth(), h = getHeight();
+            g.fill(x - 1, y - 1, x + w + 1, y + h + 1, 0xFF000000);
+            if (rainbow) {
+                for (int i = 0; i < w; i++) g.fill(x + i, y, x + i + 1, y + h, 0xFF000000 | StomachStyle.hueRgb(i / (float) w));
+            } else {
+                g.fill(x, y, x + w, y + h, 0xFF2A2A2A);
+                g.fill(x, y, x + (int) (w * this.value), y + h, 0xFF707070);
+            }
+            int hx = x + (int) ((w - 4) * this.value);
+            g.fill(hx - 1, y - 2, hx + 5, y + h + 2, 0xFF000000);
+            g.fill(hx, y - 1, hx + 4, y + h + 1, isHoveredOrFocused() ? 0xFFFFFFFF : 0xFFCCCCCC);
+            Font f = Minecraft.getInstance().font;
+            g.drawCenteredString(f, getMessage(), x + w / 2, y + 3, 0xFFFFFF);
+        }
+    }
+
+    private Slider wallHue, wallShade, acidHue, acidShade;
+
+    @Override
+    protected void init() {
+        ScreenLoop.start();
+        int x = left();
+        int y = top();
+        int sw = 150; // slider width
+        int sx = x + 15;
+
+        // --- Stomach wall
+        wallHue = new Slider(sx, y + 34, sw, "Hue", true, GulpConfig.wallHue, v -> { GulpConfig.wallHue = v; GulpConfig.wallCustom = true; });
+        wallShade = new Slider(sx, y + 52, sw, "Shade", false, GulpConfig.wallShade, v -> { GulpConfig.wallShade = v; GulpConfig.wallCustom = true; });
+        addRenderableWidget(wallHue);
+        addRenderableWidget(wallShade);
+        patternButton = Button.builder(Component.empty(), btn -> {
+            GulpConfig.stomachPattern = GulpConfig.stomachPattern.next();
+            GulpConfig.save();
+            refresh();
+        }).bounds(x + 15, y + 72, W - 30, 18).build();
+        addRenderableWidget(patternButton);
+
+        // --- Digestive acid
+        acidHue = new Slider(sx, y + 114, sw, "Hue", true, GulpConfig.acidHue, v -> { GulpConfig.acidHue = v; GulpConfig.acidCustom = true; });
+        acidShade = new Slider(sx, y + 132, sw, "Shade", false, GulpConfig.acidShade, v -> { GulpConfig.acidShade = v; GulpConfig.acidCustom = true; });
+        addRenderableWidget(acidHue);
+        addRenderableWidget(acidShade);
+
+        // Quick swatches: the colour picker. Click one for the wall (top row) or acid (bottom row).
+        int swatch = 14, gap = 2;
+        for (int i = 0; i < SWATCH_HUES.length; i++) {
+            final float hue = SWATCH_HUES[i];
+            swatchX[i] = x + 15 + i * (swatch + gap);
+            addRenderableWidget(Button.builder(Component.empty(), btn -> { wallHue.set(hue); GulpConfig.save(); })
+                    .bounds(swatchX[i], y + 94, swatch, 8).build());
+            addRenderableWidget(Button.builder(Component.empty(), btn -> { acidHue.set(hue); GulpConfig.save(); })
+                    .bounds(swatchX[i], y + 150, swatch, 8).build());
+        }
+
+        addRenderableWidget(Button.builder(Component.literal("Reset"), btn -> {
+            GulpConfig.resetStomachLook();
+            GulpConfig.save();
+            rebuildWidgets();
+        }).bounds(x + 15, y + H - 54, 60, 18).build());
+
+        addRenderableWidget(Button.builder(Component.literal("Back"), btn -> this.minecraft.setScreen(new SettingsScreen()))
+                .bounds(x + 8, y + H - 28, 60, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Close"), btn -> onClose())
+                .bounds(x + W - 68, y + H - 28, 60, 20).build());
+        refresh();
+    }
+
+    private void refresh() {
+        patternButton.setMessage(Component.literal("Wall pattern: " + GulpConfig.stomachPattern.label));
+    }
+
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
+
+    @Override
+    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        renderBackground(g);
+        int x = left();
+        int y = top();
+
+        g.fill(x, y, x + W, y + H, 0xE6141414);
+        g.fill(x, y, x + W, y + 1, 0xFF666666);
+        g.fill(x, y + H - 1, x + W, y + H, 0xFF666666);
+        g.fill(x, y, x + 1, y + H, 0xFF666666);
+        g.fill(x + W - 1, y, x + W, y + H, 0xFF666666);
+
+        g.drawString(font, "Stomach look", x + 8, y + 8, 0xFFFFFF, true);
+        g.drawString(font, "Stomach wall", x + 15, y + 22, 0xFFCCCCCC, false);
+        g.drawString(font, "Digestive acid", x + 15, y + 102 + 0, 0xFFCCCCCC, false);
+
+        // Live preview of the wall with the chosen pattern, and a strip of acid.
+        int px = x + 15 + 150 + 12, pw = W - 177 - 10;
+        StomachStyle.paintWall(g, px, y + 30, pw, 60);
+        g.drawCenteredString(font, "Wall", px + pw / 2, y + 56, 0xFFFFFFFF);
+        g.fill(px, y + 112, px + pw, y + 126, 0xFF222222);
+        g.fill(px, y + 112, px + pw * 2 / 3, y + 126, StomachStyle.acidArgb());
+        g.drawCenteredString(font, "Acid", px + pw / 2, y + 115, 0xFFFFFFFF);
+
+        // Swatch colours (drawn over the blank buttons).
+        super.render(g, mouseX, mouseY, partialTick);
+        for (int i = 0; i < SWATCH_HUES.length; i++) {
+            int c = 0xFF000000 | StomachStyle.hueRgb(SWATCH_HUES[i]);
+            g.fill(swatchX[i] + 1, y + 95, swatchX[i] + 13, y + 101, c);
+            g.fill(swatchX[i] + 1, y + 151, swatchX[i] + 13, y + 157, c);
+        }
+    }
+}
