@@ -25,6 +25,8 @@ public class SyncPacket {
     public ItemStack strip1 = ItemStack.EMPTY;
     public float used, cap;
     public boolean multiOrgans;
+    public int breastMilk, breastButter;
+    public float breastChurn;
     public int activeOrgan, hardMask;
     public float[] organUsed = new float[Organ.COUNT];
     public int[] ranks = new int[Perk.values().length];
@@ -34,6 +36,9 @@ public class SyncPacket {
         SyncPacket m = new SyncPacket();
         m.hard = s.isHard(s.organ()) && GulpServerConfig.HARD_MODE_ENABLED.get(); // the organ you swallow into; SOFT if the server has hard mode off
         m.multiOrgans = GulpServerConfig.MULTI_ORGANS_ENABLED.get();
+        m.breastMilk = s.breastMilk;
+        m.breastButter = s.breastButter;
+        m.breastChurn = Math.min(1f, s.breastChurn / (float) Math.max(1, GulpServerConfig.BREAST_CHURN_SECONDS.get() * 20));
         m.activeOrgan = s.organ();
         for (int i = 0; i < Organ.COUNT; i++) {
             if (s.isHard(i) && GulpServerConfig.HARD_MODE_ENABLED.get()) m.hardMask |= 1 << i;
@@ -76,6 +81,9 @@ public class SyncPacket {
         buf.writeFloat(m.used);
         buf.writeFloat(m.cap);
         buf.writeBoolean(m.multiOrgans);
+        buf.writeVarInt(m.breastMilk);
+        buf.writeVarInt(m.breastButter);
+        buf.writeFloat(m.breastChurn);
         buf.writeByte(m.activeOrgan);
         buf.writeByte(m.hardMask);
         for (float f : m.organUsed) buf.writeFloat(f);
@@ -114,6 +122,9 @@ public class SyncPacket {
         m.used = buf.readFloat();
         m.cap = buf.readFloat();
         m.multiOrgans = buf.readBoolean();
+        m.breastMilk = buf.readVarInt();
+        m.breastButter = buf.readVarInt();
+        m.breastChurn = buf.readFloat();
         m.activeOrgan = buf.readByte();
         m.hardMask = buf.readByte();
         for (int i = 0; i < m.organUsed.length; i++) m.organUsed[i] = buf.readFloat();

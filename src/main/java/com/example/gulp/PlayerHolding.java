@@ -281,7 +281,6 @@ public final class PlayerHolding {
             int d = entry.getInt("Digest") + 1;
             entry.putInt("Digest", d);
             int total = Math.max(1, entry.getInt("DigestTime"));
-            if (Organ.of(entry) == Organ.BREAST.ordinal()) OrganLoot.breastStage(swallower, entry, d, total);
             if (d >= total) {
                 finishDigestion(swallower, entry, victim);
                 return false;
@@ -318,10 +317,7 @@ public final class PlayerHolding {
                 victim.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 300, 0));
             }
         }
-        if (OrganLoot.enabled()) {
-            if (organ == Organ.BREAST.ordinal()) OrganLoot.finishBreast(swallower, entry); // milk and butter
-            else if (organ == Organ.COCK.ordinal()) OrganLoot.finishCock(swallower, entry); // cum
-        }
+        OrganLoot.playerDigested(swallower, s, entry, organ); // breast: Breast Milk in the storage, cock: Cum
         StomachLogic.gainXp(swallower, s, 100f);
         swallower.getFoodData().eat(4, 0.8f);
         StomachLogic.say(swallower, Component.literal("Finished digesting ").append(name));

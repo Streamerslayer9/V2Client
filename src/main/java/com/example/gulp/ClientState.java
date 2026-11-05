@@ -41,6 +41,8 @@ public final class ClientState {
     private static int level = 1, xp, xpNeeded = 100, points;
     private static float used, cap = 1.75f;
     private static boolean multiOrgans;
+    private static int breastMilk, breastButter;
+    private static float breastChurn;
     private static int activeOrgan, hardMask;
     private static float[] organUsed = new float[Organ.COUNT];
     private static int[] ranks = new int[Perk.values().length];
@@ -55,6 +57,9 @@ public final class ClientState {
         used = m.used;
         cap = m.cap;
         multiOrgans = m.multiOrgans;
+        breastMilk = m.breastMilk;
+        breastButter = m.breastButter;
+        breastChurn = m.breastChurn;
         activeOrgan = m.activeOrgan;
         hardMask = m.hardMask;
         organUsed = m.organUsed;
@@ -118,6 +123,9 @@ public final class ClientState {
         used = 0f;
         cap = 1.75f;
         multiOrgans = false;
+        breastMilk = 0;
+        breastButter = 0;
+        breastChurn = 0f;
         activeOrgan = 0;
         hardMask = 0;
         organUsed = new float[Organ.COUNT];
@@ -182,6 +190,10 @@ public final class ClientState {
     public static float cap() { return cap; }
     /** True when the server has Breast / Cock / Unbirth / Tail turned on. */
     public static boolean multiOrgans() { return multiOrgans; }
+    /** The breast storage: Breast Milk, Butter that is ready, and how far the next batch has churned (0..1). */
+    public static int breastMilk() { return breastMilk; }
+    public static int breastButter() { return breastButter; }
+    public static float breastChurn() { return breastChurn; }
     /** The organ new prey goes into (an Organ id). */
     public static int activeOrgan() { return activeOrgan; }
     public static boolean isHard(int organ) { return (hardMask & (1 << organ)) != 0; }
@@ -192,7 +204,7 @@ public final class ClientState {
     /** Changes whenever the screens need to rebuild their buttons. */
     public static String signature() {
         StringBuilder sb = new StringBuilder();
-        sb.append(hard).append(instantDigest).append(activeOrgan).append(hardMask).append('|').append(points).append('|').append(Arrays.toString(ranks)).append('|');
+        sb.append(hard).append(instantDigest).append(activeOrgan).append(hardMask).append(breastMilk).append(',').append(breastButter).append('|').append(points).append('|').append(Arrays.toString(ranks)).append('|');
         for (EntryInfo e : entries) sb.append(e.uid()).append(':').append(e.organ()).append(',');
         return sb.toString();
     }

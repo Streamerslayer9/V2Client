@@ -112,7 +112,7 @@ public final class StomachLogic {
         Stomach s = mgr.of(p.getUUID());
         // Roles: Prey and Neither have no swallowing, mode switch, digesting or item storage at all.
         // (Release, perks and changing your role always work.)
-        if (!s.role.canEat() && (action == 0 || action == 1 || action == 5 || action == 7 || action == 9 || action == 10 || action == 12 || action == 13 || action == 15 || action == 16 || action == 18 || action == 30 || action == 31)) {
+        if (!s.role.canEat() && (action == 0 || action == 1 || action == 5 || action == 7 || action == 9 || action == 10 || action == 12 || action == 13 || action == 15 || action == 16 || action == 18 || action == 30 || action == 31 || action == 32 || action == 33)) {
             StomachLogic.say(p, s.role.cantSwallowMessage());
             return;
         }
@@ -128,6 +128,8 @@ public final class StomachLogic {
                 }
             }
             case 31 -> toggleHard(p, s, arg); // the stomach screen: soft / hard for one organ
+            case 32 -> OrganLoot.take(p, mgr, s, false); // breast storage: take the Breast Milk as it is
+            case 33 -> OrganLoot.take(p, mgr, s, true); // breast storage: take the Butter that is ready
             case 2 -> {
                 if (!s.contents.isEmpty() && release(p, s.contents.get(s.contents.size() - 1))) {
                     s.contents.remove(s.contents.size() - 1);
@@ -616,6 +618,7 @@ public final class StomachLogic {
         }
         // Item storage: in hard mode, gear is broken down and trash dissolves. Works with no mobs inside.
         StomachItems.tick(p, mgr, s, s.hard && hardModeAllowed());
+        OrganLoot.tickBreast(p, mgr, s, s.isHard(Organ.BREAST.ordinal()) && hardModeAllowed()); // Breast Milk churns into Butter (also with nothing inside)
         if (s.contents.isEmpty()) return;
 
         boolean changed = false;
@@ -677,7 +680,6 @@ public final class StomachLogic {
                 if (d < digestTime) {
                     d++;
                     e.putInt("Digest", d);
-                    if (organ == Organ.BREAST.ordinal()) OrganLoot.breastStage(p, e, d, digestTime); // milk at digestion level 1 and 2
                 }
                 // Phase 2 (grace period): the bar is full, so the mob now takes damage until it runs out of health.
                 if (d >= digestTime) {
@@ -763,7 +765,7 @@ public final class StomachLogic {
             if (e instanceof LivingEntity le) {
                 McaIntegration.onDigest(p, s, le); // MCA: predator status, witnesses panic
                 le.setSilent(true); // no death groan: the Digestion sound plays instead
-                suppressLoot = OrganLoot.mobDigested(p, entry, organ); // breast: milk and butter, unbirth: spawn egg
+                suppressLoot = OrganLoot.mobDigested(p, s, entry, organ); // breast: milk and butter, unbirth: spawn egg
                 digestingPlayer = p;
                 digestingMob = le;
                 pendingLooting = looting;

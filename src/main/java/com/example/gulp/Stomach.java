@@ -36,6 +36,8 @@ public class Stomach {
     public final boolean[] hardOrgans = new boolean[Organ.COUNT];
     /** Where newly swallowed prey goes (an Organ id). Picked on the stomach screen. */
     public int activeOrgan = 0;
+    /** The breast storage: Breast Milk waiting, Butter that is ready, and how far the next batch of milk has churned (ticks). */
+    public int breastMilk, breastButter, breastChurn;
     /** Shows the Digest button next to each mob on the stomach screen. Off by default; the player turns it on in Settings. */
     public boolean instantDigest = false;
     public int level = 1;
@@ -224,6 +226,9 @@ public class Stomach {
         for (int i = 1; i < Organ.COUNT; i++) if (hardOrgans[i]) mask |= 1 << i;
         nbt.putInt("HardOrgans", mask);
         nbt.putInt("ActiveOrgan", activeOrgan);
+        nbt.putInt("BreastMilk", breastMilk);
+        nbt.putInt("BreastButter", breastButter);
+        nbt.putInt("BreastChurn", breastChurn);
         nbt.putInt("Level", level);
         nbt.putInt("Xp", xp);
         nbt.putInt("Points", points);
@@ -249,6 +254,9 @@ public class Stomach {
         int mask = nbt.getInt("HardOrgans");
         for (int i = 1; i < Organ.COUNT; i++) s.hardOrgans[i] = (mask & (1 << i)) != 0;
         s.activeOrgan = Math.max(0, Math.min(Organ.COUNT - 1, nbt.getInt("ActiveOrgan")));
+        s.breastMilk = nbt.getInt("BreastMilk");
+        s.breastButter = nbt.getInt("BreastButter");
+        s.breastChurn = nbt.getInt("BreastChurn");
         s.level = Math.max(1, nbt.getInt("Level"));
         s.xp = nbt.getInt("Xp");
         s.points = nbt.contains("Points") ? nbt.getInt("Points") : s.level - 1;

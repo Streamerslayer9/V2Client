@@ -20,6 +20,9 @@ import java.util.Optional;
 public class StomachScreen extends Screen {
     private static final int W = 250;
     private static final int ROWS = 5;
+
+    /** The Breast tab uses the last row for the breast storage (Breast Milk and Butter, with the Take buttons). */
+    private static int rows() { return ClientState.activeOrgan() == Organ.BREAST.ordinal() ? ROWS - 1 : ROWS; }
     private static final int ROW_H = 30;
     private static final int HEADER = 62;
     private static final int FOOTER = 56;
@@ -99,14 +102,14 @@ public class StomachScreen extends Screen {
     protected void init() {
         ScreenLoop.start();
         List<ClientState.EntryInfo> list = shown();
-        int pages = Math.max(1, (list.size() + ROWS - 1) / ROWS);
+        int pages = Math.max(1, (list.size() + rows() - 1) / rows());
         page = Math.max(0, Math.min(page, pages - 1));
         lastSig = ClientState.signature() + "#" + page;
 
         int x = left();
         int y = top();
-        int start = page * ROWS;
-        for (int i = 0; i < ROWS && start + i < list.size(); i++) {
+        int start = page * rows();
+        for (int i = 0; i < rows() && start + i < list.size(); i++) {
             ClientState.EntryInfo e = list.get(start + i);
             int ry = y + HEADER + i * ROW_H;
             addRenderableWidget(Button.builder(Component.literal("Release"), btn -> Net.send(4, e.uid()))
@@ -117,6 +120,18 @@ public class StomachScreen extends Screen {
                 digest.active = !"minecraft:player".equals(e.typeId()); // swallowed players are only held, never digested
                 addRenderableWidget(digest);
             }
+        }
+
+        if (ClientState.activeOrgan() == Organ.BREAST.ordinal()) { // the breast storage: take the milk as it is, or the butter that is ready
+            int sy = y + HEADER + (ROWS - 1) * ROW_H + 5;
+            Button milk = Button.builder(Component.literal("Take Milk"), btn -> Net.send(32))
+                    .bounds(x + W - 140, sy, 64, 20).build();
+            milk.active = ClientState.breastMilk() > 0;
+            addRenderableWidget(milk);
+            Button butter = Button.builder(Component.literal("Take Butter"), btn -> Net.send(33))
+                    .bounds(x + W - 72, sy, 64, 20).build();
+            butter.active = ClientState.breastButter() > 0;
+            addRenderableWidget(butter);
         }
 
         if (ClientState.multiOrgans()) { // one tab per place prey can be held; the tab you pick is where new prey goes
@@ -206,12 +221,19 @@ public class StomachScreen extends Screen {
         }
 
         // Rows
+        if (organ == Organ.BREAST.ordinal()) { // the breast storage in the last row
+            int sy = y + HEADER + (ROWS - 1) * ROW_H;
+            g.fill(x + 6, sy + 1, x + W - 6, sy + ROW_H - 1, 0x40FFC040);
+            g.drawString(font, "Milk " + ClientState.breastMilk() + "   Butter " + ClientState.breastButter(), x + 10, sy + 5, 0xFFE9A0, false);
+            g.fill(x + 10, sy + 18, x + 106, sy + 22, 0xFF222222); // how far the next batch has churned into butter
+            g.fill(x + 10, sy + 18, x + 10 + (int) (96 * ClientState.breastChurn()), sy + 22, 0xFFE6C84A);
+        }
         List<ClientState.EntryInfo> list = shown();
-        int start = page * ROWS;
+        int start = page * rows();
         if (list.isEmpty()) {
             g.drawCenteredString(font, Component.literal("Nothing in your " + Organ.byId(organ).lower() + "."), x + W / 2, y + HEADER + 60, 0xAAAAAA);
         }
-        for (int i = 0; i < ROWS && start + i < list.size(); i++) {
+        for (int i = 0; i < rows() && start + i < list.size(); i++) {
             ClientState.EntryInfo e = list.get(start + i);
             int ry = y + HEADER + i * ROW_H;
             g.fill(x + 6, ry + 1, x + W - 6, ry + ROW_H - 1, 0x40FFFFFF);
@@ -233,7 +255,7 @@ public class StomachScreen extends Screen {
         }
 
         // Page text
-        int pages = Math.max(1, (list.size() + ROWS - 1) / ROWS);
+        int pages = Math.max(1, (list.size() + rows() - 1) / rows());
         g.drawString(font, "Page " + (page + 1) + "/" + pages, x + 58, y + H - 20, 0xAAAAAA, true);
 
         super.render(g, mouseX, mouseY, partialTick);

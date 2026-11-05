@@ -42,6 +42,7 @@ public final class GulpServerConfig {
     public static final ForgeConfigSpec.BooleanValue NESTED_SWALLOW_ENABLED;
     public static final ForgeConfigSpec.BooleanValue MULTI_ORGANS_ENABLED;
     public static final ForgeConfigSpec.BooleanValue ORGAN_LOOT_ENABLED;
+    public static final ForgeConfigSpec.IntValue BREAST_CHURN_SECONDS;
     public static final ForgeConfigSpec.IntValue TAIL_TRANSIT_SECONDS;
     public static final ForgeConfigSpec.IntValue UNBIRTH_NAUSEA_MAX_SECONDS;
     public static final ForgeConfigSpec.BooleanValue MCA_HOSTILE_ENABLED;
@@ -183,9 +184,12 @@ public final class GulpServerConfig {
                         "If off, everything goes into the stomach as before.")
                 .define("multiOrgansEnabled", true);
         ORGAN_LOOT_ENABLED = b
-                .comment("What hard mode makes in the extra places: Breast gives milk (and butter at digestion level 3), Cock turns digested players into cum, Unbirth makes digested mobs drop their spawn egg.",
+                .comment("What hard mode makes in the extra places: Breast completely digests prey into Breast Milk in the breast storage (which churns into Butter), Cock gives Cum (a milk bucket) and no loot, Unbirth makes digested mobs drop their spawn egg.",
                         "If off, those places give the normal digestion result.")
                 .define("organLootEnabled", true);
+        BREAST_CHURN_SECONDS = b
+                .comment("Breast in hard mode: seconds the stored Breast Milk takes to digest, one batch at a time, into Butter.")
+                .defineInRange("breastChurnSeconds", 60, 5, 3600);
         TAIL_TRANSIT_SECONDS = b
                 .comment("Tail vore: seconds prey spend travelling through the tail before they reach the stomach (they wait there if the stomach is full).")
                 .defineInRange("tailTransitSeconds", 30, 1, 3600);
