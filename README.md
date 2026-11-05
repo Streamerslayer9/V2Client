@@ -33,8 +33,8 @@ Install Minecraft Forge for 1.20.1, then put gulp-0.1.0.jar in the mods folder. 
   digesting player's inventory (overflow lands at their feet). (DISSOLVE_SECONDS in StomachLogic.java.) Digesting gives 20 + 4 x the mob's max health in XP. Now and then (about 8% per mob per second)
   a mob struggles and hurts you: 2 HP plus 0.75 per 1.0 of mob volume, capped at 5 HP. Hard mode only; armor and Iron
   Stomach reduce it, and it never takes you below 2 hearts.
-- Perk points: the game hands out exactly enough points by level 99 to buy every rank of every perk (121 points for the
-  current 121 ranks), with none left over and none missing. Most levels give 1 point and about every eighth level
+- Perk points: the game hands out exactly enough points by level 99 to buy every rank of every perk (126 points for the
+  current 126 ranks), with none left over and none missing. Most levels give 1 point and about every eighth level
   gives 2 (see Stomach.cumulativePoints). If you add or change perks, the points adjust themselves. Older saves are
   topped up automatically to what their level should have earned.
   Spend them in N > Perks. There are two menus (switch with the Legacy / New look button, or Settings > Perk menu):
@@ -472,3 +472,12 @@ Replace logo.png with your own 256x256 art any time.
 - Actions 32 (take milk) and 33 (take butter). Network protocol is now 11.
 - **Unbirth nausea** goes to the one who struggles: a swallowed player gets 1 to unbirthNauseaMaxSeconds seconds of nausea when they
   struggle or rub. A swallowed mob cannot feel it, so when a mob squirms the one carrying it does.
+- **Stomach look** (Settings > Stomach look, client-side, saved in config/gulp-client.properties): pick the colour of the stomach wall
+  (the stomach screen panel) and of the digestive acid (the digestion bars and their legend) with a hue slider, a shade slider and a row
+  of colour swatches, and give the wall a pattern: Stars, Wavy Stripes, Stripes, Dots or Checkerboard. The preview updates as you drag.
+  Until you change something the original look is kept (dark wall, orange acid); Reset goes back to it. Code: StomachStyle, StyleScreen.
+- **Smelting Gut** (perk, 5 ranks, unlocks at stomach level 70): every 4 seconds raw ores in the item storage (items in the tags
+  forge:raw_materials and forge:ores) are smelted into ingots, using the blast furnace or furnace recipe. Ranks 1-2 smelt 1 ore per pass,
+  3-4 smelt 2, rank 5 smelts 3. Ranks 1-2 give 1 ingot per ore, 3-4 give 2, rank 5 gives 3. It needs room for the ingots, otherwise it
+  waits. Works in either mode, while the storage screen is closed. Server switch: smeltingGutEnabled. Code: StomachItems.smeltSome.
+  Network protocol is now 12 (server and clients must update together).
