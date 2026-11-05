@@ -57,6 +57,7 @@ public class PerkTreeScreen extends Screen {
         order.add(Perk.HEALING);
         order.add(Perk.MENDING);
         order.add(Perk.SMELTING);
+        order.add(Perk.ARMORED);
         for (Perk p : Perk.values()) {
             if (!order.contains(p)) order.add(p); // a perk added later still shows up
         }
@@ -80,7 +81,7 @@ public class PerkTreeScreen extends Screen {
 
     private static int colorOf(Perk perk) {
         return switch (perk) {
-            case HEALING, IRON, HEARTY, UNIVERSAL, MENDING -> SURVIVAL;
+            case HEALING, IRON, HEARTY, UNIVERSAL, MENDING, ARMORED -> SURVIVAL;
             case RICH, STRIP, SMELTING -> LOOT;
             default -> GROWTH;
         };
@@ -126,6 +127,7 @@ public class PerkTreeScreen extends Screen {
             case UNIVERSAL -> String.format("+%.1f Hunger Bars per %d items", StomachItems.hungerBars(rank), StomachItems.DIGEST_THRESHOLD);
             case STRIP -> rank == 0 ? "Locked" : rank >= 3 ? "No levels lost" : "-" + (3 - rank) + " level(s) per enchant";
             case MENDING -> rank == 0 ? "No repair" : "+" + rank * 2 + " durability / 5s per item";
+            case ARMORED -> rank == 0 ? "No armor" : "+" + String.format("%.1f", rank * 0.5) + " armor per prey";
             case SMELTING -> rank == 0 ? "Locked" : StomachItems.smeltPerPass(rank) + " ore / 4s, x" + StomachItems.smeltYield(rank) + " ingots";
             default -> "";
         };

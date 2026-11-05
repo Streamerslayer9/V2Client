@@ -21,7 +21,9 @@ public enum Perk {
     /** High-level perk. Slowly repairs gear and tools in the item storage. */
     MENDING("Mending Gut", "Gear and tools held in your stomach storage slowly repair themselves.", 5, 60),
     /** High-level perk. Smelts raw ores in the item storage into ingots over time; higher ranks give more ingots per ore. */
-    SMELTING("Smelting Gut", "Raw ores in your stomach storage smelt into ingots over time. Higher ranks smelt faster and give extra ingots per ore.", 5, 70);
+    SMELTING("Smelting Gut", "Raw ores in your stomach storage smelt into ingots over time. Higher ranks smelt faster and give extra ingots per ore.", 5, 70),
+    /** Armor for every prey you carry: 0.5 armor per rank per prey (up to 8 prey). */
+    ARMORED("Armored Gut", "The more prey you carry, the tougher you are: +0.5 armor per rank for each prey inside (up to 8).", 5, 40);
 
     public final String title;
     public final String description;

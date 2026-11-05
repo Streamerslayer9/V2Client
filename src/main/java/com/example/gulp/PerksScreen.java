@@ -73,6 +73,7 @@ public class PerksScreen extends Screen {
             case STRIP -> new ItemStack(Items.ENCHANTED_BOOK);
             case MENDING -> new ItemStack(Items.ANVIL);
             case SMELTING -> new ItemStack(Items.BLAST_FURNACE);
+            case ARMORED -> new ItemStack(Items.IRON_CHESTPLATE);
         };
     }
 

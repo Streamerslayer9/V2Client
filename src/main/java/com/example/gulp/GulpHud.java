@@ -48,10 +48,23 @@ public final class GulpHud {
                 + "] view their storage", cx, y + 35, 0xFFAAAAAA);
     }
 
+    /** The inside of the stomach, for a swallowed player: the wall (your colour and pattern) with the acid pool at the bottom. */
+    private static void renderInside(GuiGraphics g, int screenWidth, int screenHeight) {
+        StomachStyle.paintWall(g, 0, 0, screenWidth, screenHeight);
+        int acidH = Math.round((screenHeight - 2) * GulpConfig.acidLevel);
+        if (acidH > 4) StomachStyle.paintAcid(g, 0, screenHeight - acidH, screenWidth, acidH);
+    }
+
     public static void render(GuiGraphics g, int screenWidth, int screenHeight) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.options.hideGui || mc.player == null) return;
 
+        if (ClientState.heldMode() > 0) {
+            if (ClientState.insideView()) renderInside(g, screenWidth, screenHeight);
+            String view = ClientModEvents.VIEW_KEY.getTranslatedKeyMessage().getString();
+            g.drawCenteredString(mc.font, "[" + view + "] " + (ClientState.insideView() ? "see what they see" : "look inside the stomach"),
+                    screenWidth / 2, screenHeight - 62, 0xFFDDDDDD);
+        }
         renderHeldOverlay(g, mc, screenWidth);
         if (!ClientState.role().canEat()) return; // Prey / Neither: no stomach, so no stomach HUD
 

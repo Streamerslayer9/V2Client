@@ -617,6 +617,7 @@ public final class StomachLogic {
             mgr.setDirty();
         }
         // Item storage: in hard mode, gear is broken down and trash dissolves. Works with no mobs inside.
+        ArmoredGut.tick(p, s); // Armored Gut: armor for every prey inside
         StomachItems.tick(p, mgr, s, s.hard && hardModeAllowed());
         OrganLoot.tickBreast(p, mgr, s, s.isHard(Organ.BREAST.ordinal()) && hardModeAllowed()); // Breast Milk churns into Butter (also with nothing inside)
         if (s.contents.isEmpty()) return;

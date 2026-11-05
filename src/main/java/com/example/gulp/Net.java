@@ -9,7 +9,7 @@ import java.util.Optional;
 
 /** Network channel + the three packets: action (client->server), sync and belly (server->client). */
 public final class Net {
-    private static final String PROTOCOL = "12"; // 12: the Smelting Gut perk (one more perk in the sync), 11: the breast storage (milk and butter) in the sync, 10: four more organs (the sync has the organ, soft / hard per organ and the tail trip), 9: the villager info packet says whether the villager is an adult, 8: perks for prey and normal villagers (more ranks in the info packet), 7: two more villager perks (the info packet has more ranks), 6: villager perks in the villager info packet, 5: villager trait in the villager info packet, 4: villager info packet (3: swallowing system in the sync), so old and new versions refuse to connect
+    private static final String PROTOCOL = "13"; // 13: the Armored Gut perk, 12: the Smelting Gut perk (one more perk in the sync), 11: the breast storage (milk and butter) in the sync, 10: four more organs (the sync has the organ, soft / hard per organ and the tail trip), 9: the villager info packet says whether the villager is an adult, 8: perks for prey and normal villagers (more ranks in the info packet), 7: two more villager perks (the info packet has more ranks), 6: villager perks in the villager info packet, 5: villager trait in the villager info packet, 4: villager info packet (3: swallowing system in the sync), so old and new versions refuse to connect
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(Gulp.ID, "main"), () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 

@@ -39,6 +39,9 @@ public final class ClientModEvents {
 
     public static final KeyMapping SCREEN_KEY = new KeyMapping("key.gulp.screen", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_N, "key.category.gulp");
 
+    /** Swallowed: switch between what your swallower sees and the inside of the stomach. */
+    public static final KeyMapping VIEW_KEY = new KeyMapping("key.gulp.view", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H, "key.category.gulp");
+
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent e) {
         GulpConfig.load();
@@ -63,6 +66,7 @@ public final class ClientModEvents {
         e.register(RELEASE_KEY);
         e.register(STRUGGLE_KEY);
         e.register(SCREEN_KEY);
+        e.register(VIEW_KEY);
         e.register(INVENTORY_SWALLOW_KEY);
     }
 

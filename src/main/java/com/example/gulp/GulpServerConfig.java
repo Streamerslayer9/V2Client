@@ -27,6 +27,7 @@ public final class GulpServerConfig {
     public static final ForgeConfigSpec.BooleanValue DECONSTRUCT_ENCHANTED;
     public static final ForgeConfigSpec.BooleanValue UNIVERSAL_DIGESTION_ENABLED;
     public static final ForgeConfigSpec.BooleanValue SMELTING_GUT_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue ARMORED_GUT_ENABLED;
     public static final ForgeConfigSpec.BooleanValue MCA_ENABLED;
     public static final ForgeConfigSpec.DoubleValue MCA_REACTION_MULTIPLIER;
     public static final ForgeConfigSpec.BooleanValue MCA_LOCKOUT_ENABLED;
@@ -133,6 +134,9 @@ public final class GulpServerConfig {
                 .comment("If false, the Eat buttons on the storage screen only eat food (Iron Gut / Universal Digestion does nothing).",
                         "Otherwise any item can be eaten: every 32 items restores hunger (see the Iron Gut perk).")
                 .define("universalDigestionEnabled", true);
+        ARMORED_GUT_ENABLED = b
+                .comment("If false, the Armored Gut perk gives no armor.")
+                .define("armoredGutEnabled", true);
         SMELTING_GUT_ENABLED = b
                 .comment("If false, the Smelting Gut perk does nothing (raw ores in the item storage are left alone).")
                 .define("smeltingGutEnabled", true);

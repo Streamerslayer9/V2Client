@@ -52,6 +52,7 @@ public final class ClientForgeEvents {
             Entity target = TargetFinder.find(mc.player, TargetFinder.REACH);
             Net.send(0, target == null ? -1 : target.getId());
         }
+        while (ClientModEvents.VIEW_KEY.consumeClick()) ClientState.toggleInsideView(); // swallowed: pred's view <-> inside the stomach
         while (ClientModEvents.STRUGGLE_KEY.consumeClick()) Net.send(11);
         while (ClientModEvents.MODE_KEY.consumeClick()) Net.send(1);
         while (ClientModEvents.RELEASE_KEY.consumeClick()) Net.send(mc.player.isShiftKeyDown() ? 3 : 2);

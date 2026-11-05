@@ -22,6 +22,8 @@ public final class ClientState {
     private static boolean instantDigest;
     // While swallowed: 0 = not, 1 = soft, 2 = hard, plus who holds you, how digested you are and your escape chance.
     private static int heldMode;
+    /** A swallowed player can look at the inside of the stomach (true) instead of through the swallower's eyes (false). */
+    private static boolean insideView;
     private static String heldHolder = "";
     private static float heldProgress;
     private static float heldChance;
@@ -115,6 +117,7 @@ public final class ClientState {
         synced = false;
         roles.clear();
         heldMode = 0;
+        insideView = false;
         predator = 0;
         itemFill = 0f;
         digestProgress = 0;
@@ -156,12 +159,15 @@ public final class ClientState {
 
     public static void setHeld(int mode, String holder, float progress, float chance) {
         if (mode != 0 && heldMode == 0) McaScreenHooks.closeOnHeld(); // just got swallowed: close the villager's menu
+        if (mode == 0 || heldMode == 0) insideView = false; // a new swallow starts in the swallower's view
         heldMode = mode;
         heldHolder = holder;
         heldProgress = progress;
         heldChance = chance;
     }
     public static int heldMode() { return heldMode; }
+    public static boolean insideView() { return heldMode > 0 && insideView; }
+    public static void toggleInsideView() { if (heldMode > 0) insideView = !insideView; }
     public static String heldHolder() { return heldHolder; }
     public static float heldProgress() { return heldProgress; }
     public static float heldChance() { return heldChance; }
