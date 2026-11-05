@@ -37,6 +37,8 @@ public class GulpConfig {
     public static float wallShade = 0.15f;
     public static float acidHue = 0.09f;
     public static float acidShade = 0.8f;
+    /** How full of acid the stomach box looks, 0 (empty) to 1 (full). 0.5 = the bottom half. */
+    public static float acidLevel = 0.5f;
     public static StomachStyle.Pattern stomachPattern = StomachStyle.Pattern.NONE;
 
     public static void resetStomachLook() {
@@ -46,6 +48,7 @@ public class GulpConfig {
         wallShade = 0.15f;
         acidHue = 0.09f;
         acidShade = 0.8f;
+        acidLevel = 0.5f;
         stomachPattern = StomachStyle.Pattern.NONE;
     }
 
@@ -124,6 +127,7 @@ public class GulpConfig {
             wallShade = unit(props, "wallShade", wallShade);
             acidHue = unit(props, "acidHue", acidHue);
             acidShade = unit(props, "acidShade", acidShade);
+            acidLevel = unit(props, "acidLevel", acidLevel);
             try {
                 stomachPattern = StomachStyle.Pattern.valueOf(props.getProperty("stomachPattern", "NONE"));
             } catch (IllegalArgumentException e) {
@@ -159,6 +163,7 @@ public class GulpConfig {
             props.setProperty("wallShade", Float.toString(wallShade));
             props.setProperty("acidHue", Float.toString(acidHue));
             props.setProperty("acidShade", Float.toString(acidShade));
+            props.setProperty("acidLevel", Float.toString(acidLevel));
             props.setProperty("stomachPattern", stomachPattern.name());
             props.setProperty("customSounds", Boolean.toString(useCustomSounds));
             for (GulpSound s : GulpSound.values()) {

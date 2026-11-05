@@ -17,7 +17,7 @@ import java.util.function.Consumer;
  */
 public class StyleScreen extends Screen {
     private static final int W = 250;
-    private static final int H = 224;
+    private static final int H = 244;
 
     /** The quick colour picker: click a swatch to jump the hue slider to it. */
     private static final float[] SWATCH_HUES = {0.0f, 0.06f, 0.12f, 0.33f, 0.50f, 0.60f, 0.75f, 0.90f};
@@ -86,7 +86,7 @@ public class StyleScreen extends Screen {
         }
     }
 
-    private Slider wallHue, wallShade, acidHue, acidShade;
+    private Slider wallHue, wallShade, acidHue, acidShade, acidLevel;
 
     @Override
     protected void init() {
@@ -105,7 +105,7 @@ public class StyleScreen extends Screen {
             GulpConfig.stomachPattern = GulpConfig.stomachPattern.next();
             GulpConfig.save();
             refresh();
-        }).bounds(x + 15, y + 72, W - 30, 18).build();
+        }).bounds(x + 15, y + 72, sw, 18).build();
         addRenderableWidget(patternButton);
 
         // --- Digestive acid
@@ -113,6 +113,8 @@ public class StyleScreen extends Screen {
         acidShade = new Slider(sx, y + 132, sw, "Shade", false, GulpConfig.acidShade, v -> { GulpConfig.acidShade = v; GulpConfig.acidCustom = true; });
         addRenderableWidget(acidHue);
         addRenderableWidget(acidShade);
+        acidLevel = new Slider(sx, y + 166, sw, "Fullness", false, GulpConfig.acidLevel, v -> GulpConfig.acidLevel = v);
+        addRenderableWidget(acidLevel);
 
         // Quick swatches: the colour picker. Click one for the wall (top row) or acid (bottom row).
         int swatch = 14, gap = 2;
@@ -166,9 +168,10 @@ public class StyleScreen extends Screen {
         // Live preview of the box: wall and pattern on top, the animated acid pool in the bottom half.
         int px = x + 15 + 150 + 12, pw = W - 177 - 10;
         StomachStyle.paintWall(g, px, y + 30, pw, 120);
-        StomachStyle.paintAcid(g, px + 1, y + 90, pw - 2, 59);
+        int previewAcid = Math.round(118 * GulpConfig.acidLevel);
+        if (previewAcid > 4) StomachStyle.paintAcid(g, px + 1, y + 149 - previewAcid, pw - 2, previewAcid);
         g.drawCenteredString(font, "Wall", px + pw / 2, y + 50, 0xFFFFFFFF);
-        g.drawCenteredString(font, "Acid", px + pw / 2, y + 120, 0xFFFFFFFF);
+        g.drawCenteredString(font, "Acid", px + pw / 2, y + 135, 0xFFFFFFFF);
 
         // Swatch colours (drawn over the blank buttons).
         super.render(g, mouseX, mouseY, partialTick);

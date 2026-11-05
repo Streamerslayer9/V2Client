@@ -196,7 +196,8 @@ public class StomachScreen extends Screen {
 
         // Panel
         StomachStyle.paintWall(g, x, y, W, H);
-        StomachStyle.paintAcid(g, x + 1, y + H / 2, W - 2, H - H / 2 - 1); // the acid pool: bottom half of the box // the stomach wall: your colour and pattern from Settings > Stomach look
+        int acidH = Math.round((H - 2) * GulpConfig.acidLevel); // the acid pool, as full as you set it in Stomach look
+        if (acidH > 4) StomachStyle.paintAcid(g, x + 1, y + H - 1 - acidH, W - 2, acidH); // the stomach wall: your colour and pattern from Settings > Stomach look
 
         int organ = ClientState.activeOrgan();
         g.drawString(font, Organ.byId(organ).label + "  Lv." + ClientState.level(), x + 8, y + 7, 0xFFFFFF, true);
