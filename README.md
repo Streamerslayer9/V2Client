@@ -33,8 +33,8 @@ Install Minecraft Forge for 1.20.1, then put gulp-0.1.0.jar in the mods folder. 
   digesting player's inventory (overflow lands at their feet). (DISSOLVE_SECONDS in StomachLogic.java.) Digesting gives 20 + 4 x the mob's max health in XP. Now and then (about 8% per mob per second)
   a mob struggles and hurts you: 2 HP plus 0.75 per 1.0 of mob volume, capped at 5 HP. Hard mode only; armor and Iron
   Stomach reduce it, and it never takes you below 2 hearts.
-- Perk points: the game hands out exactly enough points by level 99 to buy every rank of every perk (126 points for the
-  current 126 ranks), with none left over and none missing. Most levels give 1 point and about every eighth level
+- Perk points: the game hands out exactly enough points by level 99 to buy every rank of every perk (131 points for the
+  current 131 ranks), with none left over and none missing. Most levels give 1 point and about every eighth level
   gives 2 (see Stomach.cumulativePoints). If you add or change perks, the points adjust themselves. Older saves are
   topped up automatically to what their level should have earned.
   Spend them in N > Perks. There are two menus (switch with the Legacy / New look button, or Settings > Perk menu):
@@ -481,3 +481,9 @@ Replace logo.png with your own 256x256 art any time.
   3-4 smelt 2, rank 5 smelts 3. Ranks 1-2 give 1 ingot per ore, 3-4 give 2, rank 5 gives 3. It needs room for the ingots, otherwise it
   waits. Works in either mode, while the storage screen is closed. Server switch: smeltingGutEnabled. Code: StomachItems.smeltSome.
   Network protocol is now 12 (server and clients must update together).
+- **Armored Gut** (perk, 5 ranks, unlocks at stomach level 40): +0.5 armor per rank for every prey you carry (mobs, players and villagers,
+  in any organ), counting up to 8 prey, so rank 5 with 8 prey is 20 armor. It is refreshed every second and gone as soon as the prey are.
+  Server switch: armoredGutEnabled. Code: ArmoredGut. Network protocol is now 13.
+- **Prey view** (swallowed players): press H (rebindable, "Swallowed: Pred View / Inside the Stomach") to switch between what the
+  swallower sees and the inside of the stomach: the wall in the colour and pattern you picked in Stomach look, with the animated acid
+  pool at the level you set. It uses your own Stomach look settings. Client-side only; each new swallow starts in the swallower's view.
