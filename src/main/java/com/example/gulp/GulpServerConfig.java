@@ -41,6 +41,7 @@ public final class GulpServerConfig {
     public static final ForgeConfigSpec.BooleanValue MCA_CUDDLE_ENABLED;
     public static final ForgeConfigSpec.BooleanValue NESTED_SWALLOW_ENABLED;
     public static final ForgeConfigSpec.BooleanValue MULTI_ORGANS_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue ORGAN_LOOT_ENABLED;
     public static final ForgeConfigSpec.IntValue TAIL_TRANSIT_SECONDS;
     public static final ForgeConfigSpec.IntValue UNBIRTH_NAUSEA_MAX_SECONDS;
     public static final ForgeConfigSpec.BooleanValue MCA_HOSTILE_ENABLED;
@@ -181,11 +182,15 @@ public final class GulpServerConfig {
                         "has its own room and its own soft / hard setting, so the stomach can be soft while the cock is hard. Pick the place on the stomach screen.",
                         "If off, everything goes into the stomach as before.")
                 .define("multiOrgansEnabled", true);
+        ORGAN_LOOT_ENABLED = b
+                .comment("What hard mode makes in the extra places: Breast gives milk (and butter at digestion level 3), Cock turns digested players into cum, Unbirth makes digested mobs drop their spawn egg.",
+                        "If off, those places give the normal digestion result.")
+                .define("organLootEnabled", true);
         TAIL_TRANSIT_SECONDS = b
                 .comment("Tail vore: seconds prey spend travelling through the tail before they reach the stomach (they wait there if the stomach is full).")
                 .defineInRange("tailTransitSeconds", 30, 1, 3600);
         UNBIRTH_NAUSEA_MAX_SECONDS = b
-                .comment("Unbirth: when prey struggles, the one carrying them gets nausea for 1 to this many seconds.")
+                .comment("Unbirth: when prey struggles, they get nausea for 1 to this many seconds (a swallowed mob has no one to feel it, so the one carrying it does).")
                 .defineInRange("unbirthNauseaMaxSeconds", 2, 1, 10);
         NESTED_SWALLOW_ENABLED = b
                 .comment("When a player swallows a villager who is holding a player (comforting or cuddling them), the player inside comes along, like a",

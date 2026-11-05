@@ -454,3 +454,19 @@ Replace logo.png with your own 256x256 art any time.
 - **Unbirth:** when prey struggles you get nausea for 1 to unbirthNauseaMaxSeconds (2) seconds. Mobs squirm now and then, even in soft mode;
   a swallowed player doing Struggle (R) causes it too (soft wall rub or hard struggle). The nausea goes to the one carrying them.
 - Network protocol is now 10: everyone has to update the mod together (server and clients).
+
+## What hard mode makes in the extra places (items) and the nausea target
+
+- **Breast (hard):** digested mobs and players give **Milk** (a normal bucket of milk). Digestion has three levels (the thirds of the digestion
+  bar): milk at the end of level 1 and of level 2, and when level 3 is reached (the digestion finishes) the contents are churned into
+  **Butter** (new item, edible; made as 1 to 4 depending on the size of the prey). The normal mob loot is not given for the breast.
+- **Cock (hard):** a digested player is turned into **Cum**: a new Bucket of Cum item, drunk exactly like milk (drinking animation, clears
+  all effects, gives the empty bucket back). Mobs digested in the cock give their normal loot.
+- **Unbirth (hard):** a digested mob drops its own **spawn egg** (instead of its loot). A mob that has no spawn egg gives its normal loot.
+- All of it goes straight into the swallower's inventory (what does not fit lands at their feet). Setting: organLootEnabled (off = the normal
+  digestion result everywhere). The Stomach itself is unchanged. With a player, the items come when the digestion finishes, whether or
+  not playerDigestionKills is on.
+- Items: gulp:butter, gulp:cum_bucket (Food & Drinks creative tab; textures are simple placeholders, replace them in
+  assets/gulp/textures/item/).
+- **Unbirth nausea** now goes to the one who struggles: a swallowed player gets 1 to unbirthNauseaMaxSeconds seconds of nausea when they
+  struggle or rub. A swallowed mob cannot feel it, so when a mob squirms the one carrying it does.

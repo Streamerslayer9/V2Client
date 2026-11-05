@@ -2,6 +2,11 @@ package com.example.gulp;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -18,6 +23,13 @@ public class Gulp {
 
     /** Title of the item storage screen. The client looks for it to add the Back button. */
     public static final String STORAGE_TITLE = "Stomach Storage";
+
+    /** Butter (churned from breast digestion) and a bucket of cum (a cock turns players into it). Milk is the normal milk bucket. */
+    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, ID);
+    public static final RegistryObject<Item> BUTTER = ITEMS.register("butter", () -> new Item(new Item.Properties()
+            .food(new FoodProperties.Builder().nutrition(3).saturationMod(0.5f).build())));
+    public static final RegistryObject<Item> CUM_BUCKET = ITEMS.register("cum_bucket", () -> new CumBucketItem(new Item.Properties()
+            .stacksTo(1).craftRemainder(Items.BUCKET)));
 
     public static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, ID);
     public static final RegistryObject<SoundEvent> SWALLOW = sound("swallow");
@@ -40,8 +52,17 @@ public class Gulp {
     public Gulp() {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         SOUNDS.register(modBus);
+        ITEMS.register(modBus);
+        modBus.addListener(this::creativeTabs);
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, GulpServerConfig.SPEC);
         modBus.addListener(this::commonSetup);
+    }
+
+    private void creativeTabs(BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey() == CreativeModeTabs.FOOD_AND_DRINKS) {
+            event.accept(BUTTER);
+            event.accept(CUM_BUCKET);
+        }
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {

@@ -62,13 +62,14 @@ public final class StomachLogic {
     private static ServerPlayer digestingPlayer;
     private static LivingEntity digestingMob;
     private static int itemsGiven;
+    private static boolean suppressLoot; // an organ made something else of the mob: its normal loot is not given
 
     public static ServerPlayer digestingPlayer() { return digestingPlayer; }
     public static LivingEntity digestingMob() { return digestingMob; }
 
     /** Puts a digested mob's drops straight into the player's inventory (anything that doesn't fit lands at their feet). */
     public static void giveDrops(Collection<ItemEntity> drops) {
-        if (digestingPlayer == null) return;
+        if (digestingPlayer == null || suppressLoot) return;
         for (ItemEntity drop : drops) {
             if (drop.getItem().isEmpty()) continue;
             itemsGiven += drop.getItem().getCount();
@@ -676,6 +677,7 @@ public final class StomachLogic {
                 if (d < digestTime) {
                     d++;
                     e.putInt("Digest", d);
+                    if (organ == Organ.BREAST.ordinal()) OrganLoot.breastStage(p, e, d, digestTime); // milk at digestion level 1 and 2
                 }
                 // Phase 2 (grace period): the bar is full, so the mob now takes damage until it runs out of health.
                 if (d >= digestTime) {
@@ -752,6 +754,7 @@ public final class StomachLogic {
         // Better Loot perk: 1 Looting level per 2 ranks (an odd rank is a coin flip for the extra level), up to Looting V.
         int lootRank = s.rank(Perk.RICH);
         int looting = lootRank / 2 + ((lootRank % 2 == 1 && p.getRandom().nextFloat() < 0.5f) ? 1 : 0);
+        int organ = Organ.of(entry);
         EntityType.create(entry.getCompound("Entity"), w).ifPresent(e -> {
             e.setUUID(UUID.randomUUID());
             e.moveTo(p.getX(), p.getY(), p.getZ(), 0f, 0f);
@@ -760,6 +763,7 @@ public final class StomachLogic {
             if (e instanceof LivingEntity le) {
                 McaIntegration.onDigest(p, s, le); // MCA: predator status, witnesses panic
                 le.setSilent(true); // no death groan: the Digestion sound plays instead
+                suppressLoot = OrganLoot.mobDigested(p, entry, organ); // breast: milk and butter, unbirth: spawn egg
                 digestingPlayer = p;
                 digestingMob = le;
                 pendingLooting = looting;
@@ -782,6 +786,7 @@ public final class StomachLogic {
                     pendingLooting = 0;
                     digestingPlayer = null;
                     digestingMob = null;
+                    suppressLoot = false;
                 }
                 if (le.isAlive()) {
                     // Something refused to die. Let it out rather than lose it.

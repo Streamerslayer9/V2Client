@@ -281,6 +281,7 @@ public final class PlayerHolding {
             int d = entry.getInt("Digest") + 1;
             entry.putInt("Digest", d);
             int total = Math.max(1, entry.getInt("DigestTime"));
+            if (Organ.of(entry) == Organ.BREAST.ordinal()) OrganLoot.breastStage(swallower, entry, d, total);
             if (d >= total) {
                 finishDigestion(swallower, entry, victim);
                 return false;
@@ -305,6 +306,7 @@ public final class PlayerHolding {
     private static void finishDigestion(ServerPlayer swallower, CompoundTag entry, ServerPlayer victim) {
         Stomach s = StomachManager.get(swallower.getServer()).of(swallower.getUUID());
         Component name = victim != null ? victim.getName() : StomachLogic.entryName(entry);
+        int organ = Organ.of(entry);
         releaseEntry(swallower, entry); // gives them their game mode back and puts them down in front of the swallower
         if (victim != null) {
             if (GulpServerConfig.PLAYER_DIGESTION_KILLS.get()) {
@@ -315,6 +317,10 @@ public final class PlayerHolding {
                 victim.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 600, 1));
                 victim.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 300, 0));
             }
+        }
+        if (OrganLoot.enabled()) {
+            if (organ == Organ.BREAST.ordinal()) OrganLoot.finishBreast(swallower, entry); // milk and butter
+            else if (organ == Organ.COCK.ordinal()) OrganLoot.finishCock(swallower, entry); // cum
         }
         StomachLogic.gainXp(swallower, s, 100f);
         swallower.getFoodData().eat(4, 0.8f);
@@ -389,7 +395,7 @@ public final class PlayerHolding {
             wallRub(victim, held, host, unbirth);
             return;
         }
-        if (unbirth) StomachLogic.unbirthNausea(host); // struggling in the unbirth makes the carrier queasy for a second or two
+        if (unbirth) StomachLogic.unbirthNausea(victim); // struggling in the unbirth makes the one who struggles queasy for a second or two
         float progress = entry == null ? 0f : entry.getInt("Digest") / (float) Math.max(1, entry.getInt("DigestTime"));
         float chance = escapeChance(progress);
         if (victim.getRandom().nextFloat() * 100f < chance) {
@@ -409,7 +415,7 @@ public final class PlayerHolding {
             return;
         }
         held.rubCd = GulpServerConfig.PLAYER_WALL_RUB_COOLDOWN_SECONDS.get() * 20;
-        if (unbirth) StomachLogic.unbirthNausea(host); // a rub in the unbirth makes the carrier queasy for a second or two
+        if (unbirth) StomachLogic.unbirthNausea(victim); // a rub in the unbirth makes the one who rubs queasy for a second or two
         host.getFoodData().eat(2, 0.5f);
         host.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, 0));
         host.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 200, 0));
