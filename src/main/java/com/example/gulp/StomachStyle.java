@@ -17,7 +17,14 @@ public final class StomachStyle {
         WAVES("Wavy Stripes"),
         STRIPES("Stripes"),
         DOTS("Dots"),
-        CHECKER("Checkerboard");
+        CHECKER("Checkerboard"),
+        HEARTS("Hearts"),
+        DIAMONDS("Diamonds"),
+        SCALES("Scales"),
+        VEINS("Veins"),
+        BUBBLES("Bubbles"),
+        ZIGZAG("Zigzag"),
+        PLAID("Plaid");
 
         public final String label;
         Pattern(String label) { this.label = label; }
@@ -25,6 +32,11 @@ public final class StomachStyle {
         public Pattern next() {
             Pattern[] v = values();
             return v[(ordinal() + 1) % v.length];
+        }
+
+        public Pattern previous() {
+            Pattern[] v = values();
+            return v[(ordinal() + v.length - 1) % v.length];
         }
     }
 
@@ -112,47 +124,155 @@ public final class StomachStyle {
         }
     }
 
+    /** Fills a box, cut to the area the pattern may draw in. */
+    private static void clipFill(GuiGraphics g, int ax, int ay, int bx, int by, int c, int x1, int y1, int x2, int y2) {
+        int l = Math.max(ax, x1), tp = Math.max(ay, y1), r = Math.min(bx, x2), bt = Math.min(by, y2);
+        if (r > l && bt > tp) g.fill(l, tp, r, bt, c);
+    }
+
+    /** Draws a little picture made of 'X' squares (each u pixels big) with its top left corner at (ox, oy). */
+    private static void sprite(GuiGraphics g, int ox, int oy, int u, String[] rows, int c, int x1, int y1, int x2, int y2) {
+        for (int r = 0; r < rows.length; r++) {
+            String s = rows[r];
+            int start = -1;
+            for (int i = 0; i <= s.length(); i++) {
+                boolean on = i < s.length() && s.charAt(i) == 'X';
+                if (on && start < 0) start = i;
+                if (!on && start >= 0) {
+                    clipFill(g, ox + start * u, oy + r * u, ox + i * u, oy + (r + 1) * u, c, x1, y1, x2, y2);
+                    start = -1;
+                }
+            }
+        }
+    }
+
+    private static final String[] HEART = {".XX.XX.", "XXXXXXX", "XXXXXXX", ".XXXXX.", "..XXX..", "...X..."};
+    private static final String[] DIAMOND = {"..X..", ".X.X.", "X...X", ".X.X.", "..X.."};
+
     private static void drawPattern(GuiGraphics g, int x, int y, int w, int h, Look l) {
         Pattern pattern = l.pattern;
         if (pattern == Pattern.NONE || w <= 0 || h <= 0) return;
-        int ink = 0x30000000 | lighten(wallBase(l), 0.55f); // faint, so rows and buttons stay readable on top
+        // Size: 0.5 = normal, 0 = half as big, 1 = twice as big. Strength: 0.5 = the original faint look. Colour: a lighter wall colour, or the picked hue.
+        float k = (float) Math.pow(2.0, (l.patternSize - 0.5) * 2.0);
+        int alpha = Math.max(6, Math.round(96f * l.patternStrength));
+        int rgb = l.patternCustom ? Mth.hsvToRgb(l.patternHue, 0.6f, 0.95f) : lighten(wallBase(l), 0.55f);
+        int ink = alpha << 24 | rgb; // faint, so rows and buttons stay readable on top
+        int bright = Math.min(255, alpha * 7 / 3) << 24 | (l.patternCustom ? lighten(rgb, 0.3f) : lighten(wallBase(l), 0.8f));
         int x2 = x + w, y2 = y + h;
+        int u = Math.max(1, Math.round(k));
+        double sec = (System.currentTimeMillis() % 1000000L) / 1000.0;
         switch (pattern) {
             case STARS -> {
-                int bright = 0x70000000 | lighten(wallBase(l), 0.8f);
                 for (int i = 0; i < STAR_COUNT; i++) {
                     int sx = x + 3 + STAR_X[i] * (w - 6) / 1000;
                     int sy = y + 3 + STAR_Y[i] * (h - 6) / 1000;
-                    g.fill(sx, sy, sx + 1, sy + 1, bright);
+                    g.fill(sx, sy, sx + u, sy + u, bright);
                     if (i % 3 == 0) { // every third one is a little plus shape
-                        g.fill(sx - 1, sy, sx + 2, sy + 1, ink);
-                        g.fill(sx, sy - 1, sx + 1, sy + 2, ink);
+                        g.fill(sx - u, sy, sx + 2 * u, sy + u, ink);
+                        g.fill(sx, sy - u, sx + u, sy + 2 * u, ink);
                     }
                 }
             }
             case WAVES -> {
                 double phase = (System.currentTimeMillis() % 6000L) / 6000.0 * Math.PI * 2; // drifts slowly
-                for (int row = 0, ry = y + 4; ry < y2 - 2; row++, ry += 8) {
+                int rowGap = Math.max(4, Math.round(8 * k));
+                for (int row = 0, ry = y + 4; ry < y2 - 2; row++, ry += rowGap) {
                     for (int px = x; px < x2; px += 2) {
-                        int wy = ry + (int) Math.round(Math.sin((px - x) * 0.18 + row * 0.9 + phase) * 2.0);
-                        if (wy >= y && wy < y2) g.fill(px, wy, Math.min(x2, px + 2), wy + 1, ink);
+                        int wy = ry + (int) Math.round(Math.sin((px - x) * 0.18 / k + row * 0.9 + phase) * 2.0 * k);
+                        if (wy >= y && wy < y2) g.fill(px, wy, Math.min(x2, px + 2), wy + u, ink);
                     }
                 }
             }
             case STRIPES -> {
-                for (int px = x + 2; px < x2; px += 10) g.fill(px, y, Math.min(x2, px + 3), y2, ink);
+                int gap = Math.max(5, Math.round(10 * k));
+                for (int px = x + 2; px < x2; px += gap) g.fill(px, y, Math.min(x2, px + Math.max(2, Math.round(3 * k))), y2, ink);
             }
             case DOTS -> {
-                for (int py = y + 4; py < y2 - 1; py += 8) {
-                    for (int px = x + 4; px < x2 - 1; px += 8) g.fill(px, py, px + 2, py + 2, ink);
+                int gap = Math.max(5, Math.round(8 * k));
+                for (int py = y + 4; py < y2 - 1; py += gap) {
+                    for (int px = x + 4; px < x2 - 1; px += gap) g.fill(px, py, px + 2 * u, py + 2 * u, ink);
                 }
             }
             case CHECKER -> {
-                for (int py = y, r = 0; py < y2; py += 10, r++) {
-                    for (int px = x + ((r & 1) == 0 ? 0 : 10); px < x2; px += 20) {
-                        g.fill(px, py, Math.min(x2, px + 10), Math.min(y2, py + 10), ink);
+                int cell = Math.max(5, Math.round(10 * k));
+                for (int py = y, r = 0; py < y2; py += cell, r++) {
+                    for (int px = x + ((r & 1) == 0 ? 0 : cell); px < x2; px += cell * 2) {
+                        g.fill(px, py, Math.min(x2, px + cell), Math.min(y2, py + cell), ink);
                     }
                 }
+            }
+            case HEARTS -> {
+                int stepX = 18 * u + (int) (4 * k), stepY = 14 * u + (int) (3 * k);
+                for (int row = 0, py = y + 3; py < y2; py += stepY, row++) {
+                    for (int px = x + 3 + ((row & 1) == 0 ? 0 : stepX / 2); px < x2; px += stepX) sprite(g, px, py, u, HEART, ink, x, y, x2, y2);
+                }
+            }
+            case DIAMONDS -> {
+                int stepX = 14 * u + (int) (3 * k), stepY = 12 * u + (int) (2 * k);
+                for (int row = 0, py = y + 3; py < y2; py += stepY, row++) {
+                    for (int px = x + 3 + ((row & 1) == 0 ? 0 : stepX / 2); px < x2; px += stepX) sprite(g, px, py, u, DIAMOND, ink, x, y, x2, y2);
+                }
+            }
+            case SCALES -> {
+                int r = Math.max(6, Math.round(7 * k));
+                for (int row = 0, py = y; py < y2 + r; py += r, row++) {
+                    for (int px = x + ((row & 1) == 0 ? 0 : r); px < x2 + r; px += 2 * r) {
+                        clipFill(g, px - r, py, px - r + 1, py + r / 2 + 1, ink, x, y, x2, y2); // a "U": the two sides...
+                        clipFill(g, px + r - 1, py, px + r, py + r / 2 + 1, ink, x, y, x2, y2);
+                        clipFill(g, px - r + 1, py + r / 2, px + r - 1, py + r / 2 + 1, ink, x, y, x2, y2); // ...and the bottom
+                    }
+                }
+            }
+            case VEINS -> {
+                int spacing = Math.max(14, Math.round(34 * k));
+                int pulse = (int) (alpha * (0.75 + 0.25 * Math.sin(sec * 2.2)));
+                int vein = pulse << 24 | rgb;
+                int wiggle = Math.max(2, Math.round(5 * k));
+                int branchGap = Math.max(12, Math.round(26 * k));
+                int n = 0;
+                for (int bx = x + spacing / 2; bx < x2; bx += spacing, n++) {
+                    for (int py = y; py < y2; py += 2) {
+                        int vx = bx + (int) Math.round(Math.sin(py * 0.045 / k + n * 1.7) * wiggle);
+                        clipFill(g, vx, py, vx + 2, py + 2, vein, x, y, x2, y2);
+                        if ((py - y) % branchGap < 2) { // a small branch off to the side
+                            int dir = ((n + (py - y) / branchGap) & 1) == 0 ? 1 : -1;
+                            for (int s = 1; s <= 5; s++) clipFill(g, vx + dir * s * 2, py + s, vx + dir * s * 2 + 2, py + s + 1, vein, x, y, x2, y2);
+                        }
+                    }
+                }
+            }
+            case BUBBLES -> {
+                for (int i = 0; i < 18; i++) {
+                    int r = Math.max(2, Math.round((3 + (i % 4) * 1.5f) * k));
+                    int cx = x + 4 + STAR_X[i] * (w - 8) / 1000;
+                    int rise = (int) (sec * (5 + (i % 5) * 2) * k);
+                    int cy = y2 - Math.floorMod(STAR_Y[i] * h / 1000 + rise, h + 2 * r) + r;
+                    for (int a = 0; a < 12; a++) {
+                        double ang = a * Math.PI / 6;
+                        int bx = cx + (int) Math.round(Math.cos(ang) * r), by = cy + (int) Math.round(Math.sin(ang) * r);
+                        clipFill(g, bx, by, bx + 1, by + 1, ink, x, y, x2, y2);
+                    }
+                    clipFill(g, cx - r / 2, cy - r / 2, cx - r / 2 + 1, cy - r / 2 + 1, bright, x, y, x2, y2);
+                }
+            }
+            case ZIGZAG -> {
+                int period = Math.max(5, Math.round(12 * k));
+                int amp = Math.max(2, Math.round(4 * k));
+                for (int ry = y + 3; ry < y2; ry += period + amp + 2) {
+                    for (int px = x; px < x2; px += 2) {
+                        int m = (px - x) % (2 * period);
+                        int tri = m < period ? m : 2 * period - m;
+                        clipFill(g, px, ry + tri * amp / period, px + 2, ry + tri * amp / period + 1, ink, x, y, x2, y2);
+                    }
+                }
+            }
+            case PLAID -> {
+                int band = Math.max(2, Math.round(5 * k)), gap = Math.max(10, Math.round(22 * k));
+                int soft = Math.max(4, alpha * 2 / 3) << 24 | rgb;
+                for (int px = x + 3; px < x2; px += gap) clipFill(g, px, y, px + band, y2, soft, x, y, x2, y2);
+                for (int py = y + 3; py < y2; py += gap) clipFill(g, x, py, x2, py + band, soft, x, y, x2, y2);
+                for (int px = x + 3 + band / 2; px < x2; px += gap) clipFill(g, px, y, px + 1, y2, ink, x, y, x2, y2);
+                for (int py = y + 3 + band / 2; py < y2; py += gap) clipFill(g, x, py, x2, py + 1, ink, x, y, x2, y2);
             }
             default -> { }
         }

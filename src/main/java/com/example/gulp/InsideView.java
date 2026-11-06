@@ -113,8 +113,13 @@ public final class InsideView {
             l.acidLevel = m.look[4];
             l.wallCustom = (m.flags & 1) != 0;
             l.acidCustom = (m.flags & 2) != 0;
+            l.patternStrength = m.look[5];
+            l.patternSize = m.look[6];
+            l.patternHue = m.look[7];
+            l.wallPulse = m.look[8];
+            l.patternCustom = (m.flags & 64) != 0;
             StomachStyle.Pattern[] patterns = StomachStyle.Pattern.values();
-            l.pattern = patterns[Math.min(patterns.length - 1, (m.flags >> 2) & 7)];
+            l.pattern = patterns[Math.min(patterns.length - 1, (m.flags >> 2) & 15)];
             look = l;
         } else {
             look = new Look();
@@ -175,6 +180,7 @@ public final class InsideView {
         double period = 1.25 - 0.3 * Math.min(1f, energy);
         double p = (clock / period) % 1.0;
         float beat = (float) Math.min(1.0, Math.exp(-sq((p - 0.08) * 12)) + 0.6 * Math.exp(-sq((p - 0.30) * 12)));
+        beat = Math.min(1.4f, beat * look.wallPulse * 2f); // the swallower's Wall pulse setting (0.5 = normal)
 
         StomachStyle.paintWall(g, 0, 0, w, h, look);
         int wallRgb = StomachStyle.wallArgb(look) & 0xFFFFFF;
@@ -193,7 +199,7 @@ public final class InsideView {
 
         String holder = ClientState.heldHolder();
         if (holder != null && !holder.isEmpty()) {
-            g.drawCenteredString(mc.font, "Inside " + holder + "'s " + Organ.byId(organ).lower(), w / 2, 8, 0xFFDDDDDD);
+            g.drawCenteredString(mc.font, "Inside " + holder + "'s " + Organ.byId(organ).place(), w / 2, 8, 0xFFDDDDDD);
         }
     }
 

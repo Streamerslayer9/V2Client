@@ -18,6 +18,13 @@ public final class Look {
     /** How full of acid the box looks, 0 (empty) to 1 (full). 0.5 = the bottom half. */
     public float acidLevel = 0.5f;
     public StomachStyle.Pattern pattern = StomachStyle.Pattern.NONE;
+    /** How strong the pattern is (0.5 = the original faint look), how big (0.5 = normal size) and its colour (auto = a lighter wall colour). */
+    public float patternStrength = 0.5f;
+    public float patternSize = 0.5f;
+    public boolean patternCustom = false;
+    public float patternHue = 0.0f;
+    /** How hard the walls pulse in the inside view when someone is inside you (0.5 = the normal heartbeat, 0 = none). */
+    public float wallPulse = 0.5f;
 
     public void reset() {
         wallCustom = false;
@@ -28,6 +35,11 @@ public final class Look {
         acidShade = 0.8f;
         acidLevel = 0.5f;
         pattern = StomachStyle.Pattern.NONE;
+        patternStrength = 0.5f;
+        patternSize = 0.5f;
+        patternCustom = false;
+        patternHue = 0.0f;
+        wallPulse = 0.5f;
     }
 
     private static float unit(Properties props, String key, float fallback) {
@@ -51,6 +63,11 @@ public final class Look {
         acidHue = unit(props, prefix + "acidHue", acidHue);
         acidShade = unit(props, prefix + "acidShade", acidShade);
         acidLevel = unit(props, prefix + "acidLevel", acidLevel);
+        patternStrength = unit(props, prefix + "patternStrength", 0.5f);
+        patternSize = unit(props, prefix + "patternSize", 0.5f);
+        patternHue = unit(props, prefix + "patternHue", 0.0f);
+        patternCustom = Boolean.parseBoolean(props.getProperty(prefix + "patternCustom", "false"));
+        wallPulse = unit(props, prefix + "wallPulse", 0.5f);
         try {
             pattern = StomachStyle.Pattern.valueOf(props.getProperty(patternKey(prefix), "NONE"));
         } catch (IllegalArgumentException e) {
@@ -66,6 +83,11 @@ public final class Look {
         props.setProperty(prefix + "acidHue", Float.toString(acidHue));
         props.setProperty(prefix + "acidShade", Float.toString(acidShade));
         props.setProperty(prefix + "acidLevel", Float.toString(acidLevel));
+        props.setProperty(prefix + "patternStrength", Float.toString(patternStrength));
+        props.setProperty(prefix + "patternSize", Float.toString(patternSize));
+        props.setProperty(prefix + "patternHue", Float.toString(patternHue));
+        props.setProperty(prefix + "patternCustom", Boolean.toString(patternCustom));
+        props.setProperty(prefix + "wallPulse", Float.toString(wallPulse));
         props.setProperty(patternKey(prefix), pattern.name());
     }
 }

@@ -33,12 +33,12 @@ public final class CpmDriver {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /** Other names a model author might reasonably have used, tried after the configured name. */
-    private static final String[] BELLY_ALIASES = {"belly", "stomach", "stomach_scale", "belly_scale", "tummy"};
-    private static final String[] MOBS_ALIASES = {"belly_mobs", "stomach_mobs"};
-    private static final String[] ITEMS_ALIASES = {"belly_items", "stomach_items"};
-    private static final String[] BREAST_ALIASES = {"breast", "breasts", "boobs"};
-    private static final String[] BALLS_ALIASES = {"balls", "cock", "testicles"};
-    private static final String[] WOMB_ALIASES = {"womb", "unbirth"};
+    private static final String[] BELLY_ALIASES = {"belly", "bellys", "bellies", "stomach", "stomachs", "tummy", "tummies", "gut", "belly_scale", "stomach_scale", "belly_size", "vore_belly", "belly_vore", "stomach_vore"};
+    private static final String[] MOBS_ALIASES = {"belly_mobs", "belly_mob", "belly_prey", "stomach_mobs", "stomach_mob", "stomach_prey", "mobs", "prey"};
+    private static final String[] ITEMS_ALIASES = {"belly_items", "belly_item", "stomach_items", "stomach_item"};
+    private static final String[] BREAST_ALIASES = {"breast", "breasts", "boob", "boobs", "boobies", "tit", "tits", "titty", "titties", "bust", "breast_vore", "breastvore", "chest_vore"};
+    private static final String[] BALLS_ALIASES = {"balls", "ball", "cock", "cocks", "testicles", "testicle", "testes", "nuts", "sack", "scrotum", "penis", "dick", "cock_vore", "cockvore", "balls_vore"};
+    private static final String[] WOMB_ALIASES = {"womb", "wombs", "unbirth", "unbirths", "unbirthing", "uterus", "unbirth_vore", "womb_vore", "belly_womb"};
 
     private static float shownMobs;
     private static float shownItems;
@@ -174,22 +174,31 @@ public final class CpmDriver {
         Set<String> out = new LinkedHashSet<>();
         String trimmed = name.trim();
         if (trimmed.isEmpty()) return out;
-        // The name as given, then numbered like a model author often does: "Belly 1", "Breast1", "Womb_1".
+        // The name as given, then numbered like a model author often does: "Belly 1", "Breast1", "Womb_1", "Balls-1", "Ball 01".
         List<String> names = new ArrayList<>();
         names.add(trimmed);
         if (!Character.isDigit(trimmed.charAt(trimmed.length() - 1))) {
-            names.add(trimmed + " 1");
-            names.add(trimmed + "1");
-            names.add(trimmed + "_1");
+            for (String suffix : new String[]{" 1", "1", "_1", "-1", " 01", "01", "_01"}) names.add(trimmed + suffix);
         }
         for (String numbered : names) {
-            for (String base : new String[]{numbered, numbered.replace('_', ' ')}) {
-                out.add(base);
-                out.add(base.toLowerCase(Locale.ROOT));
-                out.add(base.toUpperCase(Locale.ROOT));
-                out.add(capitalize(base));
-                out.add(titleCase(base));
+            out.add(numbered);
+            String[] words = numbered.split("[ _\\-]+");
+            // every way of joining the words (space, underscore, hyphen, nothing) in lower, UPPER, Capitalized and Title Case
+            for (String sep : new String[]{" ", "_", "-", ""}) {
+                String lower = String.join(sep, words).toLowerCase(Locale.ROOT);
+                out.add(lower);
+                out.add(lower.toUpperCase(Locale.ROOT));
+                out.add(capitalize(lower));
+                StringBuilder title = new StringBuilder();
+                for (int i = 0; i < words.length; i++) {
+                    if (i > 0) title.append(sep);
+                    title.append(capitalize(words[i].toLowerCase(Locale.ROOT)));
+                }
+                out.add(title.toString());
             }
+            StringBuilder camel = new StringBuilder(); // bellyMobs
+            for (int i = 0; i < words.length; i++) camel.append(i == 0 ? words[i].toLowerCase(Locale.ROOT) : capitalize(words[i].toLowerCase(Locale.ROOT)));
+            out.add(camel.toString());
         }
         return out;
     }
@@ -226,7 +235,7 @@ public final class CpmDriver {
             case 1 -> BREAST_ALIASES;
             case 2 -> BALLS_ALIASES;
             case 3 -> WOMB_ALIASES;
-            case 4 -> new String[]{"tail", "tail_vore"};
+            case 4 -> new String[]{"tail", "tails", "tail_vore", "tailvore"};
             default -> BELLY_ALIASES;
         };
     }

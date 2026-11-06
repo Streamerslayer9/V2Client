@@ -205,12 +205,18 @@ public final class ClientState {
      */
     public static boolean organAvailable(int id) {
         if (id <= 0 || id >= Organ.COUNT || !GulpConfig.requireCpmModel || id == activeOrgan) return true;
-        String[] names = CpmDriver.organNames(id);
-        if (id == 1) names = new String[]{GulpConfig.cpmBreastName, "breast", "breasts"};
-        else if (id == 2) names = new String[]{GulpConfig.cpmBallsName, "balls", "cock"};
-        else if (id == Organ.UNBIRTH_ID) names = new String[]{GulpConfig.cpmWombName, "womb", "unbirth"};
-        if (CpmDriver.modelHas(names)) return true;
-        return id == Organ.UNBIRTH_ID && CpmDriver.modelHas(GulpConfig.cpmBellyName, "belly", "stomach"); // no womb: it leads to the belly
+        String configured = id == 1 ? GulpConfig.cpmBreastName : id == 2 ? GulpConfig.cpmBallsName : id == Organ.UNBIRTH_ID ? GulpConfig.cpmWombName : "";
+        if (CpmDriver.modelHas(withName(configured, CpmDriver.organNames(id)))) return true;
+        // no womb: Unbirth leads to the regular belly, so a model with a belly can still pick it
+        return id == Organ.UNBIRTH_ID && CpmDriver.modelHas(withName(GulpConfig.cpmBellyName, CpmDriver.organNames(0)));
+    }
+
+    /** The names from Settings first, then every name the mod knows for that organ. */
+    private static String[] withName(String configured, String[] known) {
+        java.util.List<String> all = new java.util.ArrayList<>();
+        if (configured != null && !configured.isBlank()) all.add(configured);
+        all.addAll(java.util.Arrays.asList(known));
+        return all.toArray(new String[0]);
     }
     /** The breast storage: Breast Milk, Butter that is ready, and how far the next batch has churned (0..1). */
     public static int breastMilk() { return breastMilk; }

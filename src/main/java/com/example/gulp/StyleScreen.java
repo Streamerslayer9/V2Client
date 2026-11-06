@@ -23,7 +23,9 @@ public class StyleScreen extends Screen {
     private static final float[] SWATCH_HUES = {0.0f, 0.06f, 0.12f, 0.33f, 0.50f, 0.60f, 0.75f, 0.90f};
 
     private final int[] swatchX = new int[SWATCH_HUES.length];
-    private Button patternButton;
+    private Button patternButton, patternColorButton;
+    /** false = the colours page; true = the pattern options page (pattern, strength, size, colour, wall pulse). */
+    private boolean patternPage;
     /** Which place is being edited: an Organ id (stomach, breast, cock or unbirth). */
     private int organ = 0;
 
@@ -113,35 +115,59 @@ public class StyleScreen extends Screen {
             addRenderableWidget(tab);
         }
 
-        // --- Wall
-        wallHue = new Slider(sx, y + 34, sw, "Hue", true, look().wallHue, v -> { look().wallHue = v; look().wallCustom = true; });
-        wallShade = new Slider(sx, y + 52, sw, "Shade", false, look().wallShade, v -> { look().wallShade = v; look().wallCustom = true; });
-        addRenderableWidget(wallHue);
-        addRenderableWidget(wallShade);
-        patternButton = Button.builder(Component.empty(), btn -> {
-            look().pattern = look().pattern.next();
-            GulpConfig.save();
-            refresh();
-        }).bounds(x + 15, y + 72, sw, 18).build();
-        addRenderableWidget(patternButton);
+        if (patternPage) {
+            // --- Pattern options
+            patternButton = Button.builder(Component.empty(), btn -> {
+                look().pattern = hasShiftDown() ? look().pattern.previous() : look().pattern.next();
+                GulpConfig.save();
+                refresh();
+            }).bounds(sx, y + 34, sw, 18).build();
+            addRenderableWidget(patternButton);
+            addRenderableWidget(new Slider(sx, y + 58, sw, "Strength", false, look().patternStrength, v -> look().patternStrength = v));
+            addRenderableWidget(new Slider(sx, y + 76, sw, "Size", false, look().patternSize, v -> look().patternSize = v));
+            addRenderableWidget(new Slider(sx, y + 94, sw, "Pattern color", true, look().patternHue, v -> { look().patternHue = v; look().patternCustom = true; refresh(); }));
+            patternColorButton = Button.builder(Component.empty(), btn -> {
+                look().patternCustom = !look().patternCustom;
+                GulpConfig.save();
+                refresh();
+            }).bounds(sx, y + 112, sw, 16).build();
+            addRenderableWidget(patternColorButton);
+            addRenderableWidget(new Slider(sx, y + 142, sw, "Wall pulse", false, look().wallPulse, v -> look().wallPulse = v));
+            addRenderableWidget(Button.builder(Component.literal("< Colors"), btn -> { patternPage = false; rebuildWidgets(); })
+                    .bounds(sx, y + 166, sw, 18).build());
+        } else {
+            // --- Wall
+            wallHue = new Slider(sx, y + 34, sw, "Hue", true, look().wallHue, v -> { look().wallHue = v; look().wallCustom = true; });
+            wallShade = new Slider(sx, y + 52, sw, "Shade", false, look().wallShade, v -> { look().wallShade = v; look().wallCustom = true; });
+            addRenderableWidget(wallHue);
+            addRenderableWidget(wallShade);
+            patternButton = Button.builder(Component.empty(), btn -> {
+                look().pattern = hasShiftDown() ? look().pattern.previous() : look().pattern.next();
+                GulpConfig.save();
+                refresh();
+            }).bounds(x + 15, y + 72, 100, 18).build();
+            addRenderableWidget(patternButton);
+            addRenderableWidget(Button.builder(Component.literal("More..."), btn -> { patternPage = true; rebuildWidgets(); })
+                    .bounds(x + 15 + 104, y + 72, 46, 18).build());
 
-        // --- Digestive acid
-        acidHue = new Slider(sx, y + 114, sw, "Hue", true, look().acidHue, v -> { look().acidHue = v; look().acidCustom = true; });
-        acidShade = new Slider(sx, y + 132, sw, "Shade", false, look().acidShade, v -> { look().acidShade = v; look().acidCustom = true; });
-        addRenderableWidget(acidHue);
-        addRenderableWidget(acidShade);
-        acidLevel = new Slider(sx, y + 166, sw, "Fullness", false, look().acidLevel, v -> look().acidLevel = v);
-        addRenderableWidget(acidLevel);
+            // --- Digestive acid
+            acidHue = new Slider(sx, y + 114, sw, "Hue", true, look().acidHue, v -> { look().acidHue = v; look().acidCustom = true; });
+            acidShade = new Slider(sx, y + 132, sw, "Shade", false, look().acidShade, v -> { look().acidShade = v; look().acidCustom = true; });
+            addRenderableWidget(acidHue);
+            addRenderableWidget(acidShade);
+            acidLevel = new Slider(sx, y + 166, sw, "Fullness", false, look().acidLevel, v -> look().acidLevel = v);
+            addRenderableWidget(acidLevel);
 
-        // Quick swatches: the colour picker. Click one for the wall (top row) or acid (bottom row).
-        int swatch = 14, gap = 2;
-        for (int i = 0; i < SWATCH_HUES.length; i++) {
-            final float hue = SWATCH_HUES[i];
-            swatchX[i] = x + 15 + i * (swatch + gap);
-            addRenderableWidget(Button.builder(Component.empty(), btn -> { wallHue.set(hue); GulpConfig.save(); })
-                    .bounds(swatchX[i], y + 94, swatch, 8).build());
-            addRenderableWidget(Button.builder(Component.empty(), btn -> { acidHue.set(hue); GulpConfig.save(); })
-                    .bounds(swatchX[i], y + 150, swatch, 8).build());
+            // Quick swatches: the colour picker. Click one for the wall (top row) or acid (bottom row).
+            int swatch = 14, gap = 2;
+            for (int i = 0; i < SWATCH_HUES.length; i++) {
+                final float hue = SWATCH_HUES[i];
+                swatchX[i] = x + 15 + i * (swatch + gap);
+                addRenderableWidget(Button.builder(Component.empty(), btn -> { wallHue.set(hue); GulpConfig.save(); })
+                        .bounds(swatchX[i], y + 94, swatch, 8).build());
+                addRenderableWidget(Button.builder(Component.empty(), btn -> { acidHue.set(hue); GulpConfig.save(); })
+                        .bounds(swatchX[i], y + 150, swatch, 8).build());
+            }
         }
 
         addRenderableWidget(Button.builder(Component.literal("Reset"), btn -> {
@@ -158,7 +184,13 @@ public class StyleScreen extends Screen {
     }
 
     private void refresh() {
-        patternButton.setMessage(Component.literal("Wall pattern: " + look().pattern.label));
+        StomachStyle.Pattern p = look().pattern;
+        patternButton.setMessage(Component.literal(patternPage
+                ? "Pattern: " + p.label + " (" + (p.ordinal() + 1) + "/" + StomachStyle.Pattern.values().length + ")"
+                : p.label));
+        if (patternColorButton != null) {
+            patternColorButton.setMessage(Component.literal("Pattern color: " + (look().patternCustom ? "Custom (slider)" : "Auto")));
+        }
     }
 
     @Override
@@ -180,8 +212,12 @@ public class StyleScreen extends Screen {
         g.fill(x + W - 1, t, x + W, t + H, 0xFF666666);
 
         g.drawString(font, "Stomach look", x + 8, t + 8, 0xFFFFFF, true);
-        g.drawString(font, Organ.byId(organ).tab() + " wall", x + 15, y + 22, 0xFFCCCCCC, false);
-        g.drawString(font, "Digestive acid", x + 15, y + 102 + 0, 0xFFCCCCCC, false);
+        g.drawString(font, Organ.byId(organ).tab() + (patternPage ? " wall pattern" : " wall"), x + 15, y + 22, 0xFFCCCCCC, false);
+        if (patternPage) {
+            g.drawString(font, "Walls pulse when someone is inside", x + 15, y + 131, 0xFF999999, false);
+        } else {
+            g.drawString(font, "Digestive acid", x + 15, y + 102 + 0, 0xFFCCCCCC, false);
+        }
 
         // Live preview of the box: wall and pattern on top, the animated acid pool in the bottom half.
         int px = x + 15 + 150 + 12, pw = W - 177 - 10;
@@ -193,7 +229,7 @@ public class StyleScreen extends Screen {
 
         // Swatch colours (drawn over the blank buttons).
         super.render(g, mouseX, mouseY, partialTick);
-        for (int i = 0; i < SWATCH_HUES.length; i++) {
+        for (int i = 0; i < SWATCH_HUES.length && !patternPage; i++) {
             int c = 0xFF000000 | StomachStyle.hueRgb(SWATCH_HUES[i]);
             g.fill(swatchX[i] + 1, y + 95, swatchX[i] + 13, y + 101, c);
             g.fill(swatchX[i] + 1, y + 151, swatchX[i] + 13, y + 157, c);

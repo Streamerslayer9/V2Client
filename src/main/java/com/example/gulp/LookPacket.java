@@ -17,10 +17,10 @@ import java.util.function.Supplier;
 public class LookPacket {
     /** Stomach, breast, cock, unbirth (the tail uses the stomach's). */
     public static final int COUNT = 4;
-    public static final int FLOATS = 5; // wallHue, wallShade, acidHue, acidShade, acidLevel
+    public static final int FLOATS = 9; // wallHue, wallShade, acidHue, acidShade, acidLevel, patternStrength, patternSize, patternHue, wallPulse
 
     public final float[][] values = new float[COUNT][FLOATS];
-    /** bit 0 = wallCustom, bit 1 = acidCustom, bits 2-4 = the pattern number. */
+    /** bit 0 = wallCustom, bit 1 = acidCustom, bits 2-5 = the pattern number, bit 6 = patternCustom. */
     public final int[] flags = new int[COUNT];
 
     private static final Map<UUID, LookPacket> LOOKS = new HashMap<>();
@@ -35,7 +35,11 @@ public class LookPacket {
             m.values[i][2] = l.acidHue;
             m.values[i][3] = l.acidShade;
             m.values[i][4] = l.acidLevel;
-            m.flags[i] = (l.wallCustom ? 1 : 0) | (l.acidCustom ? 2 : 0) | (l.pattern.ordinal() & 7) << 2;
+            m.values[i][5] = l.patternStrength;
+            m.values[i][6] = l.patternSize;
+            m.values[i][7] = l.patternHue;
+            m.values[i][8] = l.wallPulse;
+            m.flags[i] = (l.wallCustom ? 1 : 0) | (l.acidCustom ? 2 : 0) | (l.pattern.ordinal() & 15) << 2 | (l.patternCustom ? 64 : 0);
         }
         return m;
     }
@@ -51,7 +55,7 @@ public class LookPacket {
         LookPacket m = new LookPacket();
         for (int i = 0; i < COUNT; i++) {
             for (int j = 0; j < FLOATS; j++) m.values[i][j] = clamp01(buf.readFloat());
-            m.flags[i] = buf.readByte() & 0x1F;
+            m.flags[i] = buf.readByte() & 0x7F;
         }
         return m;
     }
