@@ -1,0 +1,20 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:anvil",
+    "minecraft:chipped_anvil",
+    "minecraft:damaged_anvil",
+    "minecraft:lodestone",
+    "minecraft:saddle",
+    "minecraft:leather_horse_armor",
+    "minecraft:iron_horse_armor",
+    "minecraft:golden_horse_armor",
+    "minecraft:diamond_horse_armor",
+    "minecraft:cauldron",
+    "minecraft:hopper",
+    "minecraft:bucket",
+    "minecraft:compass",
+    "minecraft:clock",
+    "minecraft:minecart"
+  ]
+}
