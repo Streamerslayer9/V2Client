@@ -214,7 +214,7 @@ public class StyleScreen extends Screen {
         g.drawString(font, "Stomach look", x + 8, t + 8, 0xFFFFFF, true);
         g.drawString(font, Organ.byId(organ).tab() + (patternPage ? " wall pattern" : " wall"), x + 15, y + 22, 0xFFCCCCCC, false);
         if (patternPage) {
-            g.drawString(font, "Walls pulse when someone is inside", x + 15, y + 131, 0xFF999999, false);
+            g.drawString(font, font.plainSubstrByWidth("Pulse when someone is inside", 146), x + 15, y + 131, 0xFF999999, false);
         } else {
             g.drawString(font, "Digestive acid", x + 15, y + 102 + 0, 0xFFCCCCCC, false);
         }
