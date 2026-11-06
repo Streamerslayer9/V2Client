@@ -48,12 +48,9 @@ public final class GulpHud {
                 + "] view their storage", cx, y + 35, 0xFFAAAAAA);
     }
 
-    /** The inside of the stomach, for a swallowed player: the wall (your colour and pattern) with the acid pool at the bottom. */
+    /** The inside of the stomach, for a swallowed player: the swallower's own look, with bubbles, floating prey and a pulsing wall (InsideView). */
     private static void renderInside(GuiGraphics g, int screenWidth, int screenHeight) {
-        Look look = GulpConfig.look(0); // the server doesn't say which organ you are in, so this is the stomach's look
-        StomachStyle.paintWall(g, 0, 0, screenWidth, screenHeight, look);
-        int acidH = Math.round((screenHeight - 2) * look.acidLevel);
-        if (acidH > 4) StomachStyle.paintAcid(g, 0, screenHeight - acidH, screenWidth, acidH, look);
+        InsideView.render(g, screenWidth, screenHeight);
     }
 
     public static void render(GuiGraphics g, int screenWidth, int screenHeight) {

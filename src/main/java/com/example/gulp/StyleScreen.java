@@ -199,4 +199,11 @@ public class StyleScreen extends Screen {
             g.fill(swatchX[i] + 1, y + 151, swatchX[i] + 13, y + 157, c);
         }
     }
+
+    /** Leaving the screen (Close, Back or Escape): tell the server the new look, so a player you swallow sees your stomach as you made it. */
+    @Override
+    public void removed() {
+        super.removed();
+        InsideView.sendMyLooks();
+    }
 }

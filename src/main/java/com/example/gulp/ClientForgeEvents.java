@@ -19,6 +19,8 @@ public final class ClientForgeEvents {
 
     /** The swallowing-system choice screen is opened by itself once per login (V and Settings reopen it). */
     private static boolean choicePrompted;
+    /** Our stomach looks are sent to the server once after joining (so a player who swallows us... or that we swallow, sees ours). */
+    private static boolean looksSent;
 
     /** Leaving a world or server: stop the music and forget the old stomach so it doesn't leak into the next one. */
     @SubscribeEvent
@@ -26,6 +28,8 @@ public final class ClientForgeEvents {
         ClientState.reset();
         ClientVillagerInfo.clear();
         choicePrompted = false;
+        looksSent = false;
+        InsideView.clear();
         CpmDriver.reset();
         ScreenLoop.stop();
     }
@@ -36,6 +40,7 @@ public final class ClientForgeEvents {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         CpmDriver.tick(); // Custom Player Models belly sliders (does nothing without CPM)
+        if (!looksSent && mc.getConnection() != null) { looksSent = true; InsideView.sendMyLooks(); }
 
         // Flamevore installed and no choice made yet: ask which mod should do the swallowing.
         if (!choicePrompted && mc.screen == null && ClientState.needsSwallowChoice()) {

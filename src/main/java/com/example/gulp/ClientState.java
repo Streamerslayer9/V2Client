@@ -159,7 +159,7 @@ public final class ClientState {
 
     public static void setHeld(int mode, String holder, float progress, float chance) {
         if (mode != 0 && heldMode == 0) McaScreenHooks.closeOnHeld(); // just got swallowed: close the villager's menu
-        if (mode == 0 || heldMode == 0) insideView = false; // a new swallow starts in the swallower's view
+        if (mode == 0 || heldMode == 0) { insideView = false; InsideView.clear(); } // a new swallow starts in the swallower's view
         heldMode = mode;
         heldHolder = holder;
         heldProgress = progress;

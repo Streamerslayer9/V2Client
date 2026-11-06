@@ -262,6 +262,27 @@ public final class PlayerHolding {
         }
         // Pressing sneak makes a spectator stop looking through someone else's eyes; put them straight back.
         if (victim.getCamera() != holder) victim.setCamera(holder);
+        if (victim.tickCount % 10 == 0) sendPreyView(victim, held, holder); // for the inside view (twice a second)
+    }
+
+    /** What the inside of the swallower's stomach looks like: their own look, and the other prey in the same organ. */
+    private static void sendPreyView(ServerPlayer victim, Held held, ServerPlayer host) {
+        Stomach hs = StomachManager.get(victim.getServer()).of(held.swallower());
+        CompoundTag mine = findEntry(hs, victim.getUUID());
+        int organ = mine == null ? 0 : Organ.of(mine);
+        int lookIndex = organ >= 1 && organ <= 3 ? organ : 0; // the tail uses the stomach's look
+        LookPacket looks = LookPacket.of(host.getUUID());
+        List<PreyViewPacket.Fellow> fellows = new ArrayList<>();
+        for (CompoundTag e : hs.contents) {
+            if (e == mine || Organ.of(e) != organ) continue;
+            if (fellows.size() >= 24) break;
+            boolean player = isPlayerEntry(e);
+            int dt = Math.max(1, e.getInt("DigestTime"));
+            fellows.add(new PreyViewPacket.Fellow(e.getInt("Uid"), player ? "minecraft:player" : e.getCompound("Entity").getString("id"),
+                    Math.min(1f, e.getInt("Digest") / (float) dt), player));
+        }
+        Net.CHANNEL.send(PacketDistributor.PLAYER.with(() -> victim), new PreyViewPacket(organ,
+                looks == null ? null : looks.values[lookIndex], looks == null ? 0 : looks.flags[lookIndex], fellows));
     }
 
     /**
@@ -489,6 +510,7 @@ public final class PlayerHolding {
     public static void onLogout(ServerPlayer p) {
         if (isHeld(p)) escape(p);
         releaseAllHeldBy(p);
+        LookPacket.forget(p.getUUID());
     }
 
     public static void onLogin(ServerPlayer p) {
