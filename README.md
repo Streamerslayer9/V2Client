@@ -184,6 +184,12 @@ reactions switch themselves off with one line in the log.
   with MCA's own skin texture (with the villager's skin tone) and clothing texture, in MCA's order, so the outfit grows with
   the belly instead of the normal Minecraft skin poking through it. Players who aren't using MCA's villager look get the
   normal belly. (McaSkins.java; MCA's clothing sits further out than its skin, so the clothing pass uses slightly bigger meshes.)
+- Stomach look, more wall options: 13 patterns (None, Stars, Wavy Stripes, Stripes, Dots, Checkerboard, Hearts, Diamonds, Scales, Veins,
+  Bubbles, Zigzag, Plaid). Settings > Stomach look > More... has the pattern (Shift + click goes back), its Strength and Size, its colour
+  (Auto = a lighter wall colour, or pick a hue) and Wall pulse (how hard the walls pulse in the inside view). Swallowed players see all of it
+  on the swallower's stomach. CPM layer names: many more spellings are found now (belly/bellys/bellies/tummy/gut, breast/boob/tit,
+  balls/ball/cock/testicle/nuts/sack, womb/uterus/unbirth, tail) in any case, with or without a space, underscore, hyphen or number
+  (Belly 1, ball1, Womb_01 ...), and the Breast, Cock and Womb tabs accept all of them too. Network protocol is now 16.
 - Villager bellies: while an MCA villager holds a player in their tummy (comfort, cuddle, Climb In, an angry grab), the villager gets a belly
   that grows with how many players they hold compared to what they can hold (Roomy Belly), and shrinks again when the player is out. It
   is drawn with MCA's own skin and outfit like the player belly, follows the Settings belly style (and Off), and is client-side only apart
