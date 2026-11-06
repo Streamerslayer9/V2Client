@@ -188,6 +188,13 @@ reactions switch themselves off with one line in the log.
   that grows with how many players they hold compared to what they can hold (Roomy Belly), and shrinks again when the player is out. It
   is drawn with MCA's own skin and outfit like the player belly, follows the Settings belly style (and Off), and is client-side only apart
   from the villager's fullness being sent with the normal belly packet. Code: VillagerHolding.syncBelly, VillagerBellyLayer.
+- Inside view (swallowed players, key H): the inside of the stomach is drawn in the SWALLOWER's own Stomach look (colours, pattern, acid level;
+  the look of the organ you are in; a villager uses the default look). It has a pulsing wall (a heartbeat that squeezes the edges, slow
+  folds along the wall), an acid pool whose waves get faster and taller when the swallower runs, jumps or falls, bubbles that rise and pop
+  at the surface, the other prey in the same organ floating around as their spawn eggs (a head for a player), a bar and dripping acid
+  particles as they digest, and a burst of particles when one is gone. Cosmetic only. Network: the swallower's client sends its looks
+  (LookPacket, kept in memory only) and the server sends the swallowed player the look and the fellow prey twice a second
+  (PreyViewPacket). Code: InsideView, PlayerHolding.sendPreyView. Network protocol is now 15.
 - Digesting a villager also triggers MCA's own death rules (witnesses lose hearts, family grieves, a headstone may appear).
 - Predator status: swallowing a villager adds to it (hard 15, soft 3; digesting adds about 25; fans count for less) and it
   fades by 1 every 20 seconds. It is shown on the stomach screen. At 30 or more, villagers who are afraid of you refuse to
@@ -258,6 +265,10 @@ shares any animation.
   Use any of them, or all three. Each is set between 0 and the maximum the model allows for that animation (the mod reads the
   maximum from the model, so any range works). An animation the model doesn't have is skipped. Values ease toward their
   target, so the belly grows and shrinks smoothly.
+- Organ sliders (Breast vore, Cock vore, Unbirth): the mod also drives "Breast 1" (Breast), "Balls 1" (Cock) and "Womb1" (Unbirth), each
+  from how full that organ is. Numbered names like "Belly 1", "Breast1" or "Womb_1" are found as well as the plain ones. A model
+  with no womb slider shows Unbirth prey on its regular belly (Flamevore-style models), and Unbirth stays pickable as long as the model
+  has a belly or a womb. Names: cpmBreastName, cpmBallsName, cpmWombName in config/gulp-client.properties.
 - Names can be changed in config/gulp-client.properties (cpmBellyName, cpmMobsName, cpmItemsName). Settings > Toggles > CPM belly
   sliders switches it off; Settings > Belly style > "Off (my model has one)" turns off the built-in bulge. If your own model
   has a "belly" animation, the built-in bulge steps aside for you automatically.
