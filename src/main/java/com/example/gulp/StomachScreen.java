@@ -141,7 +141,7 @@ public class StomachScreen extends Screen {
             for (int i = 0; i < Organ.COUNT; i++) {
                 if (!ClientState.organAvailable(i)) continue;
                 final int organ = i;
-                Button tab = Button.builder(Component.literal(Organ.byId(i).label), btn -> {
+                Button tab = Button.builder(Component.literal(Organ.byId(i).tab()), btn -> {
                             page = 0;
                             Net.send(30, organ);
                         })
@@ -205,7 +205,7 @@ public class StomachScreen extends Screen {
         if (acidH > 4) StomachStyle.paintAcid(g, x + 1, y + H - 1 - acidH, W - 2, acidH, look);
 
         int organ = ClientState.activeOrgan();
-        g.drawString(font, Organ.byId(organ).label + "  Lv." + ClientState.level(), x + 8, y + 7, 0xFFFFFF, true);
+        g.drawString(font, Organ.byId(organ).tab() + "  Lv." + ClientState.level(), x + 8, y + 7, 0xFFFFFF, true);
         String acidLabel = "acid: digestion";
         String legend = "red: health   ";
         int lx = x + W - 8 - font.width(legend) - font.width(acidLabel);
@@ -237,7 +237,7 @@ public class StomachScreen extends Screen {
         List<ClientState.EntryInfo> list = shown();
         int start = page * rows();
         if (list.isEmpty()) {
-            g.drawCenteredString(font, Component.literal("Nothing in your " + Organ.byId(organ).lower() + "."), x + W / 2, y + HEADER + 60, 0xAAAAAA);
+            g.drawCenteredString(font, Component.literal("Nothing in your " + Organ.byId(organ).place() + "."), x + W / 2, y + HEADER + 60, 0xAAAAAA);
         }
         for (int i = 0; i < rows() && start + i < list.size(); i++) {
             ClientState.EntryInfo e = list.get(start + i);

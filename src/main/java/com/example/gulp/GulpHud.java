@@ -85,7 +85,7 @@ public final class GulpHud {
             return;
         }
         int organ = ClientState.activeOrgan();
-        right(g, mc, Organ.byId(organ).label + " Lv." + ClientState.level() + (ClientState.isHard() ? "  [HARD]" : "  [SOFT]"), rightEdge, y - 12, 0xFFFFFF);
+        right(g, mc, Organ.byId(organ).tab() + " Lv." + ClientState.level() + (ClientState.isHard() ? "  [HARD]" : "  [SOFT]"), rightEdge, y - 12, 0xFFFFFF);
 
         g.fill(x - 1, y - 1, x + w + 1, y + 9, 0xFF000000);
         g.fill(x, y, x + w, y + 8, 0xFF333333);

@@ -18,6 +18,12 @@ public enum Organ {
 
     Organ(String label) { this.label = label; }
 
+    /** The place prey is in, for messages ("swallowing into your womb"): the unbirth organ is the womb, the rest are named as they are. */
+    public String place() { return this == UNBIRTH ? "womb" : lower(); }
+
+    /** The name on tabs and screen headers: the Unbirth organ is the Womb (the vore type itself is still called Unbirth). */
+    public String tab() { return this == UNBIRTH ? "Womb" : label; }
+
     public String lower() { return label.toLowerCase(java.util.Locale.ROOT); }
 
     public static Organ byId(int id) { return id >= 0 && id < COUNT ? values()[id] : STOMACH; }

@@ -107,7 +107,7 @@ public class StyleScreen extends Screen {
         for (int i = 0; i < Organ.COUNT; i++) {
             if (i == Organ.TAIL_ID || (i != organ && !ClientState.organAvailable(i))) continue;
             final int id = i;
-            Button tab = Button.builder(Component.literal(Organ.byId(i).label), btn -> { organ = id; rebuildWidgets(); })
+            Button tab = Button.builder(Component.literal(Organ.byId(i).tab()), btn -> { organ = id; rebuildWidgets(); })
                     .bounds(x + 15 + slot++ * (tabW + 2), top0 + 20, tabW, 16).build();
             tab.active = i != organ;
             addRenderableWidget(tab);
@@ -180,7 +180,7 @@ public class StyleScreen extends Screen {
         g.fill(x + W - 1, t, x + W, t + H, 0xFF666666);
 
         g.drawString(font, "Stomach look", x + 8, t + 8, 0xFFFFFF, true);
-        g.drawString(font, Organ.byId(organ).label + " wall", x + 15, y + 22, 0xFFCCCCCC, false);
+        g.drawString(font, Organ.byId(organ).tab() + " wall", x + 15, y + 22, 0xFFCCCCCC, false);
         g.drawString(font, "Digestive acid", x + 15, y + 102 + 0, 0xFFCCCCCC, false);
 
         // Live preview of the box: wall and pattern on top, the animated acid pool in the bottom half.
