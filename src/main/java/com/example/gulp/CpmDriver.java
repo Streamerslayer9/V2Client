@@ -3,8 +3,10 @@ package com.example.gulp;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -34,9 +36,13 @@ public final class CpmDriver {
     private static final String[] BELLY_ALIASES = {"belly", "stomach", "stomach_scale", "belly_scale", "tummy"};
     private static final String[] MOBS_ALIASES = {"belly_mobs", "stomach_mobs"};
     private static final String[] ITEMS_ALIASES = {"belly_items", "stomach_items"};
+    private static final String[] BREAST_ALIASES = {"breast", "breasts", "boobs"};
+    private static final String[] BALLS_ALIASES = {"balls", "cock", "testicles"};
+    private static final String[] WOMB_ALIASES = {"womb", "unbirth"};
 
     private static float shownMobs;
     private static float shownItems;
+    private static float shownBreast, shownBalls, shownWomb;
     private static boolean localModelHasBelly;
     private static int ticks;
     /** Last value sent, keyed by the real animation name in the model. */
@@ -52,6 +58,10 @@ public final class CpmDriver {
     public static void reset() {
         shownMobs = 0f;
         shownItems = 0f;
+        shownBreast = 0f;
+        shownBalls = 0f;
+        shownWomb = 0f;
+        AVAILABLE.clear();
         localModelHasBelly = false;
         ticks = 0;
         LAST_SENT.clear();
@@ -72,16 +82,29 @@ public final class CpmDriver {
         if (++ticks % 2 != 0) return; // every other tick is plenty
 
         float cap = Math.max(0.0001f, ClientState.cap());
-        float mobTarget = clamp01(ClientState.used() / cap);
+        // Which of the extra sliders (Breast 1, Balls 1, Womb 1) this model has. Prey in an organ with no slider of its own
+        // shows on the belly instead (an Unbirth on a model with no womb leads to the regular belly).
+        boolean hasBreast = resolve(GulpConfig.cpmBreastName, BREAST_ALIASES) != null;
+        boolean hasBalls = resolve(GulpConfig.cpmBallsName, BALLS_ALIASES) != null;
+        boolean hasWomb = resolve(GulpConfig.cpmWombName, WOMB_ALIASES) != null;
+        float womb = ClientState.usedIn(Organ.UNBIRTH_ID);
+        float bellyUsed = ClientState.used() + (hasWomb ? 0f : womb);
+        float mobTarget = clamp01(bellyUsed / cap);
         float itemTarget = clamp01(ClientState.itemFill());
         shownMobs = ease(shownMobs, mobTarget);
         shownItems = ease(shownItems, itemTarget);
+        shownBreast = ease(shownBreast, clamp01(ClientState.usedIn(Organ.BREAST.ordinal()) / cap));
+        shownBalls = ease(shownBalls, clamp01(ClientState.usedIn(Organ.COCK.ordinal()) / cap));
+        shownWomb = ease(shownWomb, clamp01(womb / cap));
         float total = clamp01(shownMobs + 0.5f * shownItems);
 
         boolean resend = ticks % 200 == 0; // now and then, in case the player switched models
         boolean bellyExists = push(GulpConfig.cpmBellyName, BELLY_ALIASES, total, resend);
         boolean mobsExists = push(GulpConfig.cpmMobsName, MOBS_ALIASES, shownMobs, resend);
         boolean itemsExists = push(GulpConfig.cpmItemsName, ITEMS_ALIASES, shownItems, resend);
+        if (hasBreast) push(GulpConfig.cpmBreastName, BREAST_ALIASES, shownBreast, resend);
+        if (hasBalls) push(GulpConfig.cpmBallsName, BALLS_ALIASES, shownBalls, resend);
+        if (hasWomb) push(GulpConfig.cpmWombName, WOMB_ALIASES, shownWomb, resend);
         // A model with ANY of the three belly animations drives its own belly, so our built-in box steps aside.
         localModelHasBelly = bellyExists || mobsExists || itemsExists;
     }
@@ -151,14 +174,61 @@ public final class CpmDriver {
         Set<String> out = new LinkedHashSet<>();
         String trimmed = name.trim();
         if (trimmed.isEmpty()) return out;
-        for (String base : new String[]{trimmed, trimmed.replace('_', ' ')}) {
-            out.add(base);
-            out.add(base.toLowerCase(Locale.ROOT));
-            out.add(base.toUpperCase(Locale.ROOT));
-            out.add(capitalize(base));
-            out.add(titleCase(base));
+        // The name as given, then numbered like a model author often does: "Belly 1", "Breast1", "Womb_1".
+        List<String> names = new ArrayList<>();
+        names.add(trimmed);
+        if (!Character.isDigit(trimmed.charAt(trimmed.length() - 1))) {
+            names.add(trimmed + " 1");
+            names.add(trimmed + "1");
+            names.add(trimmed + "_1");
+        }
+        for (String numbered : names) {
+            for (String base : new String[]{numbered, numbered.replace('_', ' ')}) {
+                out.add(base);
+                out.add(base.toLowerCase(Locale.ROOT));
+                out.add(base.toUpperCase(Locale.ROOT));
+                out.add(capitalize(base));
+                out.add(titleCase(base));
+            }
         }
         return out;
+    }
+
+    private static final Map<String, Boolean> AVAILABLE = new HashMap<>();
+    private static final Map<String, Long> AVAILABLE_AT = new HashMap<>();
+
+    /**
+     * Does the player's Custom Player Model have an animation with one of these names (any spelling, with or without a number: "Breast 1")?
+     * Checked at most once a second per set of names, so screens can ask every frame.
+     */
+    public static boolean modelHas(String... names) {
+        if (!CpmBridge.available()) return false;
+        String key = String.join("|", names);
+        long now = System.currentTimeMillis();
+        Long at = AVAILABLE_AT.get(key);
+        if (at != null && now - at < 1000L) return AVAILABLE.getOrDefault(key, false);
+        boolean found = false;
+        for (String name : names) {
+            if (name == null || name.isBlank()) continue;
+            for (String candidate : variants(name)) {
+                if (CpmBridge.maxValue(candidate) >= 0) { found = true; break; }
+            }
+            if (found) break;
+        }
+        AVAILABLE.put(key, found);
+        AVAILABLE_AT.put(key, now);
+        return found;
+    }
+
+    /** The names that tell us the model has a place for each organ (breast, balls, womb) and for the regular belly. */
+    public static String[] organNames(int organ) {
+        return switch (organ) {
+            case 1 -> BREAST_ALIASES;
+            case 2 -> BALLS_ALIASES;
+            case 3 -> WOMB_ALIASES;
+            case 4 -> new String[]{"tail", "tail_vore"};
+            default -> BELLY_ALIASES;
+        };
     }
 
     private static String capitalize(String s) {

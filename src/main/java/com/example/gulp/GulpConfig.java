@@ -65,6 +65,10 @@ public class GulpConfig {
     public static String cpmBellyName = "belly";
     public static String cpmMobsName = "belly_mobs";
     public static String cpmItemsName = "belly_items";
+    /** The sliders for the other organs: Breast vore, Cock vore (balls) and Unbirth (womb). "Breast 1", "Balls 1" and "Womb1" are found under these names too. */
+    public static String cpmBreastName = "breast";
+    public static String cpmBallsName = "balls";
+    public static String cpmWombName = "womb";
 
     /** true = the old list-style perk menu, false = the new look (nodes around a hub). */
     public static boolean legacyPerkMenu = false;
@@ -107,6 +111,9 @@ public class GulpConfig {
             cpmBellyName = props.getProperty("cpmBellyName", "belly").trim();
             cpmMobsName = props.getProperty("cpmMobsName", "belly_mobs").trim();
             cpmItemsName = props.getProperty("cpmItemsName", "belly_items").trim();
+            cpmBreastName = props.getProperty("cpmBreastName", "breast").trim();
+            cpmBallsName = props.getProperty("cpmBallsName", "balls").trim();
+            cpmWombName = props.getProperty("cpmWombName", "womb").trim();
             legacyPerkMenu = Boolean.parseBoolean(props.getProperty("legacyPerkMenu", "false"));
             for (int i = 0; i < Organ.COUNT; i++) if (i != Organ.TAIL_ID) LOOKS[i].load(props, lookPrefix(i));
             useCustomSounds = Boolean.parseBoolean(props.getProperty("customSounds", "true"));
@@ -133,6 +140,9 @@ public class GulpConfig {
             props.setProperty("cpmBellyName", cpmBellyName);
             props.setProperty("cpmMobsName", cpmMobsName);
             props.setProperty("cpmItemsName", cpmItemsName);
+            props.setProperty("cpmBreastName", cpmBreastName);
+            props.setProperty("cpmBallsName", cpmBallsName);
+            props.setProperty("cpmWombName", cpmWombName);
             props.setProperty("legacyPerkMenu", Boolean.toString(legacyPerkMenu));
             for (int i = 0; i < Organ.COUNT; i++) if (i != Organ.TAIL_ID) LOOKS[i].save(props, lookPrefix(i));
             props.setProperty("customSounds", Boolean.toString(useCustomSounds));

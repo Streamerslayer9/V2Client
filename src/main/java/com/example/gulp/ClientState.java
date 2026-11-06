@@ -197,23 +197,20 @@ public final class ClientState {
     /** True when the server has Breast / Cock / Unbirth / Tail turned on. */
     public static boolean multiOrgans() { return multiOrgans; }
 
-    /** The CPM animation names that tell us a model has a place for each organ (index = Organ id). The player's model brings the parts. */
-    private static final String[][] ORGAN_MODEL_NAMES = {
-            {}, {"breast", "breasts"}, {"cock", "balls"}, {"unbirth", "womb"}, {"tail", "tail_vore"}};
-
     /**
      * Can this player pick this organ? The stomach always. The others need a Custom Player Model that has the matching animation
-     * (the model is on your own client, so this is checked here), unless requireCpmModel is off in gulp-client.properties.
+     * (Breast 1 / Breast, Balls 1 / Cock, Womb1 / Unbirth, Tail; the model is on your own client, so this is checked here), unless
+     * requireCpmModel is off in gulp-client.properties. Unbirth is also fine on a model with just a regular Belly (it leads there).
      * An organ you are already swallowing into stays available, so you can always get back to it.
      */
     public static boolean organAvailable(int id) {
         if (id <= 0 || id >= Organ.COUNT || !GulpConfig.requireCpmModel || id == activeOrgan) return true;
-        for (String name : ORGAN_MODEL_NAMES[id]) {
-            if (CpmBridge.maxValue(name) >= 0) return true;
-            String capital = Character.toUpperCase(name.charAt(0)) + name.substring(1); // CPM names are case-sensitive
-            if (CpmBridge.maxValue(capital) >= 0) return true;
-        }
-        return false;
+        String[] names = CpmDriver.organNames(id);
+        if (id == 1) names = new String[]{GulpConfig.cpmBreastName, "breast", "breasts"};
+        else if (id == 2) names = new String[]{GulpConfig.cpmBallsName, "balls", "cock"};
+        else if (id == Organ.UNBIRTH_ID) names = new String[]{GulpConfig.cpmWombName, "womb", "unbirth"};
+        if (CpmDriver.modelHas(names)) return true;
+        return id == Organ.UNBIRTH_ID && CpmDriver.modelHas(GulpConfig.cpmBellyName, "belly", "stomach"); // no womb: it leads to the belly
     }
     /** The breast storage: Breast Milk, Butter that is ready, and how far the next batch has churned (0..1). */
     public static int breastMilk() { return breastMilk; }
