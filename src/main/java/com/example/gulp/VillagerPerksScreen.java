@@ -36,6 +36,7 @@ public class VillagerPerksScreen extends Screen {
     private boolean dragging;  // dragging the scroll bar
     private Button climbButton;
     private Button convertButton;
+    private Button feedButton, spitButton;
     private Button backButton;
     private Button closeButton;
 
@@ -73,6 +74,18 @@ public class VillagerPerksScreen extends Screen {
                         "Ask them to become a pred villager for good. They need to like you enough, and their old perks are forgotten (points refunded).")))
                 .build());
         convertButton.visible = false;
+        feedButton = addRenderableWidget(Button.builder(Component.literal("Feed"), btn -> Net.send(40, entityId))
+                .bounds(x + W - 156, y + H - 52, 72, 20)
+                .tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal(
+                        "Feed the villager in your stomach (soft mode) to this pred. They both feel differently about you depending on what they are.")))
+                .build());
+        feedButton.visible = false;
+        spitButton = addRenderableWidget(Button.builder(Component.literal("Spit Up"), btn -> Net.send(41, entityId))
+                .bounds(x + W - 80, y + H - 52, 72, 20)
+                .tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal(
+                        "Ask this pred to let out the villagers they are holding. Some preds will say no.")))
+                .build());
+        spitButton.visible = false;
         for (VillagerPerk perk : VillagerPerk.values()) {
             int i = perk.ordinal();
             buyButtons[i] = addRenderableWidget(Button.builder(Component.literal("+"), btn -> Net.send(21, entityId << 4 | i))
@@ -195,6 +208,18 @@ public class VillagerPerksScreen extends Screen {
             climbButton.setY(y + H - 52);
             convertButton.setY(y + H - 52);
         }
+        if (feedButton != null && spitButton != null) { // a pred's Perks screen: feed a villager to them, or ask for one back
+            boolean pred = adultNow && info.type == 2;
+            feedButton.visible = pred;
+            spitButton.visible = pred;
+            if (pred) {
+                climbButton.setX(x + 8);
+                feedButton.setX(x + W - 156);
+                spitButton.setX(x + W - 80);
+                feedButton.setY(y + H - 52);
+                spitButton.setY(y + H - 52);
+            }
+        }
         if (storageButton != null) {
             storageButton.visible = info != null && info.type == 2;
             if (info != null) storageButton.setMessage(Component.literal("Storage (" + VillagerStorage.rowsFor(info.level) * 9 + ")"));
@@ -208,7 +233,9 @@ public class VillagerPerksScreen extends Screen {
             g.drawString(font, "Level " + level + (max ? " (max)" : ""), x + 8, y + 24, 0xE6C84A, false);
             VillagerTrait trait = VillagerTrait.byId(info.trait);
             String kindWord = info.type == 2 ? "pred" : info.type == 1 ? "prey" : "villager";
-            String note = trait != VillagerTrait.NONE ? trait.label + " " + kindWord : "Normal villager";
+            Flavor flavor = Flavor.byId(info.flavor);
+            String note = flavor != Flavor.NONE ? flavor.label + " " + kindWord
+                    : trait != VillagerTrait.NONE ? trait.label + " " + kindWord : "Normal villager";
             g.drawString(font, note, x + W - 8 - font.width(note), y + 24, 0x999999, false);
             int bx = x + 8;
             int by = y + 36;

@@ -29,7 +29,7 @@ public enum Perk {
     /** Tail: +0.75 blocks of swallow reach per rank while the tail is the selected vore type. */
     TAIL_REACH("Long Tail", "Your tail swallows from further away: +0.75 blocks of reach per rank while the tail is selected.", 5, 25),
     /** Unbirth: digested mobs drop their spawn egg (40% / 70% / 100%). Without it they give their normal loot. */
-    BROOD("Brood Mother", "Mobs digested in your unbirth can drop their spawn egg: 40% at rank 1, 70% at rank 2, always at rank 3.", 3, 60),
+    BROOD("Brood Mother", "Mobs digested in your womb can drop their spawn egg: 40% at rank 1, 70% at rank 2, always at rank 3.", 3, 60),
     /** Breast: lets the stored Breast Milk churn into Butter (rank 1), faster at ranks 2 and 3. */
     CHURN("Butter Churn", "Lets the Breast Milk in your breast churn into Butter. Rank 2 churns 25% faster, rank 3 twice as fast.", 3, 30);
 

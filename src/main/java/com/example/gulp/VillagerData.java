@@ -71,6 +71,14 @@ public class VillagerData extends SavedData {
         }
     }
 
+    /** The ids of every villager who has something saved under `key` (used to find preds who are holding a villager after a restart). */
+    static java.util.List<UUID> idsWith(MinecraftServer server, String key) {
+        java.util.List<UUID> out = new java.util.ArrayList<>();
+        VillagerData d = get(server);
+        d.map.forEach((id, tag) -> { if (tag.contains(key)) out.add(id); });
+        return out;
+    }
+
     /** Throw away everything about this villager (they died). */
     static void forget(Entity villager) {
         VillagerData d = of(villager);

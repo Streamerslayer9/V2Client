@@ -184,6 +184,7 @@ public final class VillagerStorage {
         if (v.level().isClientSide || !McaIntegration.isVillager(v)) return;
         ListTag list = VillagerData.getTag(v, KEY) instanceof ListTag l ? l : new ListTag();
         OPEN.remove(v.getUUID());
+        VillagerFeeding.onPredDied(v); // anyone a pred villager was holding comes out where they fell
         for (int i = 0; i < list.size(); i++) {
             ItemStack st = ItemStack.of(list.getCompound(i));
             if (!st.isEmpty()) v.spawnAtLocation(st);

@@ -70,6 +70,34 @@ public class Stomach {
     /** MCA: "predator" status. Grows when you swallow/digest villagers, fades with time (see McaIntegration). */
     public int predator = 0;
 
+    /** Villagers this player has swallowed: one record per villager {Id, Name, Soft, Hard}, for /gulp eaten. */
+    public final List<CompoundTag> eaten = new ArrayList<>();
+
+    /** Counts a swallowed villager (soft or hard mode at the time). Keeps at most 500 different villagers. */
+    public void recordEaten(java.util.UUID id, String name, boolean hard) {
+        String key = id.toString();
+        CompoundTag rec = null;
+        for (CompoundTag t : eaten) {
+            if (key.equals(t.getString("Id"))) { rec = t; break; }
+        }
+        if (rec == null) {
+            if (eaten.size() >= 500) return;
+            rec = new CompoundTag();
+            rec.putString("Id", key);
+            eaten.add(rec);
+        }
+        rec.putString("Name", name);
+        String field = hard ? "Hard" : "Soft";
+        rec.putInt(field, rec.getInt(field) + 1);
+    }
+
+    /** How many times villagers were swallowed in hard (true) or soft (false) mode. */
+    public int eatenTotal(boolean hard) {
+        int n = 0;
+        for (CompoundTag t : eaten) n += t.getInt(hard ? "Hard" : "Soft");
+        return n;
+    }
+
     /** Universal Digestion (Iron Gut): items eaten since the last hunger payout, always 0..31 (see StomachItems.DIGEST_THRESHOLD). */
     public int digestProgress = 0;
 
@@ -239,6 +267,9 @@ public class Stomach {
         nbt.putString("SwallowSystem", swallowSystem.name());
         nbt.putBoolean("InstantDigest", instantDigest);
         nbt.putInt("Predator", predator);
+        ListTag eatenLog = new ListTag();
+        eatenLog.addAll(eaten);
+        nbt.put("EatenLog", eatenLog);
         nbt.putInt("DigestProgress", digestProgress);
         nbt.put("Storage", ContainerHelper.saveAllItems(new CompoundTag(), storage));
         nbt.put("StripSlots", ContainerHelper.saveAllItems(new CompoundTag(), stripSlots));
@@ -267,6 +298,9 @@ public class Stomach {
         SwallowSystem savedSystem = nbt.contains("SwallowSystem") ? SwallowSystem.byName(nbt.getString("SwallowSystem")) : null;
         s.swallowSystem = savedSystem != null ? savedSystem : SwallowSystem.UNSET; // older saves: asked on first join if Flamevore is installed
         s.predator = Math.max(0, nbt.getInt("Predator"));
+        for (Tag logged : nbt.getList("EatenLog", Tag.TAG_COMPOUND)) {
+            if (logged instanceof CompoundTag rec) s.eaten.add(rec.copy());
+        }
         s.digestProgress = Math.max(0, Math.min(StomachItems.DIGEST_THRESHOLD - 1, nbt.getInt("DigestProgress")));
         ContainerHelper.loadAllItems(nbt.getCompound("Storage"), s.storage);
         ContainerHelper.loadAllItems(nbt.getCompound("StripSlots"), s.stripSlots);

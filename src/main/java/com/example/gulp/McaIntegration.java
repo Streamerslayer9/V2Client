@@ -70,7 +70,7 @@ public final class McaIntegration {
      *  PREY    villagers are more open to being carried: even shy ones can ask, once they trust you enough.
      *  PRED    villagers never ask to be carried (they would rather do the carrying; eating the player comes later).
      */
-    private enum VoreType { NORMAL, PREY, PRED }
+    enum VoreType { NORMAL, PREY, PRED }
 
     private static Boolean modLoaded;
     private static boolean broken; // MCA looked different from what we expected: stop trying
@@ -206,8 +206,10 @@ public final class McaIntegration {
         }
     }
 
-    private static VoreType voreTypeOf(Entity villager) {
+    static VoreType voreTypeOf(Entity villager) {
         if (VillagerData.getFlag(villager, KIND_KEY, "Pred")) return VoreType.PRED; // asked to become a pred (askConvert)
+        if (VillagerData.getFlag(villager, KIND_KEY, "Prey")) return VoreType.PREY; // a child's genetics decided it (see tickGenetics)
+        if (VillagerData.getFlag(villager, KIND_KEY, "Normal")) return VoreType.NORMAL;
         return switch (Math.floorMod(villager.getUUID().hashCode() * 31 + 7, 4)) {
             case 0 -> VoreType.PRED;
             case 1 -> VoreType.PREY;
@@ -229,6 +231,54 @@ public final class McaIntegration {
         };
     }
 
+    /**
+     * A pred or prey villager's personality on top of their temper (see Flavor): rare protective (often a guard), cocky arrogant
+     * for confident ones, very flustered for shy ones. Worked out from their UUID, so it never changes and needs nothing saved.
+     */
+    static Flavor flavorOf(Entity villager) {
+        if (voreTypeOf(villager) == VoreType.NORMAL) return Flavor.NONE;
+        UUID id = villager.getUUID();
+        long x = id.getMostSignificantBits() * 31L + id.getLeastSignificantBits();
+        x ^= x >>> 33;
+        x *= 0xff51afd7ed558ccdL;
+        x ^= x >>> 33;
+        int a = (int) ((x >>> 8) & 0x7fffffL) % 100;
+        int b = (int) ((x >>> 40) & 0x7fffL) % 100;
+        if (a < (guard(villager) ? 55 : 7)) return Flavor.PROTECTIVE; // rare, except guards
+        VillagerTrait temper = traitOf(villager);
+        if (temper == VillagerTrait.CONFIDENT && b < 50) return Flavor.ARROGANT;
+        if (temper == VillagerTrait.SHY && b < 50) return Flavor.FLUSTERED;
+        return Flavor.NONE;
+    }
+
+    /** What a pred says when they start holding the player: their personality's line, else their temper's. */
+    static String holdText(Entity villager, boolean cuddle) {
+        String s = flavorOf(villager).holdLine(cuddle);
+        if (s != null) return s;
+        VillagerTrait t = traitOf(villager);
+        return cuddle ? t.cuddleHoldLine() : t.holdLine();
+    }
+
+    static String idleText(Entity villager, VillagerTrait trait) {
+        String s = flavorOf(villager).idleLine();
+        return s != null ? s : trait.holdIdleLine();
+    }
+
+    static String finishText(Entity villager, VillagerTrait trait, boolean cuddle) {
+        String s = cuddle ? null : flavorOf(villager).finishLine();
+        return s != null ? s : cuddle ? trait.cuddleFinishLine() : trait.finishLine();
+    }
+
+    static String comfortOfferText(Entity villager, VillagerTrait trait) {
+        String s = flavorOf(villager).comfortOfferLine();
+        return s != null ? s : trait.comfortOfferLine();
+    }
+
+    static String cuddleOfferText(Entity villager, VillagerTrait trait) {
+        String s = flavorOf(villager).cuddleOfferLine();
+        return s != null ? s : trait.cuddleOfferLine();
+    }
+
     /** 0 normal, 1 prey, 2 pred: the numbers VillagerInfoPacket and VillagerPerk.forType use. */
     static int typeOf(Entity villager) {
         return switch (voreTypeOf(villager)) {
@@ -247,7 +297,9 @@ public final class McaIntegration {
     private static String voreKind(Entity villager) {
         VillagerTrait trait = traitOf(villager);
         if (trait != VillagerTrait.NONE) {
-            return voreTypeOf(villager).name().toLowerCase(java.util.Locale.ROOT) + ", " + trait.label.toLowerCase(java.util.Locale.ROOT);
+            Flavor flavor = flavorOf(villager);
+            return voreTypeOf(villager).name().toLowerCase(java.util.Locale.ROOT) + ", " + trait.label.toLowerCase(java.util.Locale.ROOT)
+                    + (flavor == Flavor.NONE ? "" : ", " + flavor.lower());
         }
         String temper = switch (attitude(villager)) {
             case FAN -> "confident";
@@ -257,7 +309,7 @@ public final class McaIntegration {
         return voreTypeOf(villager).name().toLowerCase(java.util.Locale.ROOT) + ", " + temper;
     }
 
-    private static boolean guard(Entity villager) {
+    static boolean guard(Entity villager) {
         try {
             return isGuard != null && (Boolean) isGuard.invoke(villager);
         } catch (Throwable t) {
@@ -457,7 +509,7 @@ public final class McaIntegration {
      * moves their mood the same amount (so big losses make them "depressed", big gains "overjoyed"), shows the
      * happy/angry particles, and doubles the loss for sensitive villagers.
      */
-    private static void reward(Entity villager, ServerPlayer player, int hearts) {
+    static void reward(Entity villager, ServerPlayer player, int hearts) {
         int scaled = Math.round(hearts * GulpServerConfig.MCA_REACTION_MULTIPLIER.get().floatValue());
         if (scaled == 0) return;
         try {
@@ -540,11 +592,18 @@ public final class McaIntegration {
                 : (a == Attitude.FAN ? 0 : a == Attitude.FEARFUL ? 5 : 3);
         addPredator(p, s, predator);
         reactNearby(p, swallowed, hard);
+        s.recordEaten(swallowed.getUUID(), swallowed.getName().getString(), hard); // /gulp eaten
+        Flavor flavor = flavorOf(swallowed);
+        if (flavor != Flavor.NONE && voreTypeOf(swallowed) == VoreType.PREY && !hard) { // an arrogant, flustered or protective prey has something to say
+            String line = flavor.swallowedLine();
+            if (line != null) p.sendSystemMessage(Component.literal("<").append(swallowed.getName()).append("> " + line));
+        }
     }
 
     /** A villager is let out. The ones who enjoy it get happier the longer the ride was. */
-    public static void onRelease(ServerPlayer p, Stomach s, Entity released, int heldTicks) {
+    public static void onRelease(ServerPlayer p, Stomach s, Entity released, int heldTicks, CompoundTag entry) {
         if (!active() || !isVillager(released)) return;
+        if (entry != null && entry.getBoolean("Slept") && !s.isHard(s.organ())) wellRested(p, released);
         if (!s.isHard(s.organ())) VillagerXp.onRide(p, released, heldTicks); // a soft ride teaches a villager something
         remember(released, p.getUUID(), "gulp.released");
         if (heldTicks >= 1200) remember(released, p.getUUID(), "gulp.long_ride"); // a ride of a minute or more
@@ -554,6 +613,29 @@ public final class McaIntegration {
             reward(released, p, Math.min(25, 5 + heldTicks / 200)); // +5, then +1 for every 10 seconds, up to +25
         } else if (!s.isHard(s.organ())) {
             reward(released, p, a == Attitude.FEARFUL ? 3 : 5);     // relief at being let out safely
+        }
+    }
+
+    /**
+     * The player slept in a bed while this villager was inside: it counts as the villager having slept too. They come out well
+     * rested: a few hearts, a memory MCA dialogue can use (gulp.slept_in_belly), and for a vanilla-style brain the "last slept" time.
+     * Villagers inside a stomach are not in the world, so nothing else about them (energy, hunger) changes while they are in there.
+     */
+    private static void wellRested(ServerPlayer p, Entity villager) {
+        remember(villager, p.getUUID(), "gulp.slept_in_belly");
+        reward(villager, p, 4);
+        if (villager instanceof net.minecraft.world.entity.npc.Villager v) {
+            v.getBrain().setMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.LAST_SLEPT, villager.level().getGameTime());
+        }
+        p.sendSystemMessage(Component.literal("<").append(villager.getName()).append("> That was a lovely nap in there. I feel well rested!"));
+    }
+
+    /** The player woke up from a night in a bed: every villager in their stomach slept too. */
+    public static void onPlayerSlept(ServerPlayer p) {
+        if (!active()) return;
+        Stomach s = StomachManager.get(p.getServer()).of(p.getUUID());
+        for (CompoundTag entry : s.contents) {
+            if (entry.contains("McaInfo")) entry.putBoolean("Slept", true);
         }
     }
 
@@ -747,7 +829,10 @@ public final class McaIntegration {
         info.putString("Attitude", attitude(villager).name());
         info.putInt("Hearts", heartsWith(villager, p));
         info.putInt("Times", memoryCount(villager, p.getUUID(), "gulp.swallowed"));
+        info.putString("Flavor", flavorOf(villager).name());
+        info.putString("Type", voreTypeOf(villager).name());
         entry.put("McaInfo", info);
+        entry.putInt("FlavorIn", 400 + p.getRandom().nextInt(600)); // a prey's personality first shows after 20 to 50 seconds
         entry.putInt("CommentIn", 600 + p.getRandom().nextInt(600)); // first comment after 30 to 60 seconds
     }
 
@@ -757,7 +842,10 @@ public final class McaIntegration {
      */
     public static void tickInside(ServerPlayer p, CompoundTag entry, boolean hardNow) {
         CompoundTag info = entry.getCompound("McaInfo");
-        if (info.isEmpty() || !GulpServerConfig.MCA_AFFECTION_ENABLED.get()) return;
+        if (info.isEmpty()) return;
+        Flavor flavor = Flavor.byName(info.getString("Flavor"));
+        if (flavor != Flavor.NONE && !hardNow && "PREY".equals(info.getString("Type"))) flavorInside(p, entry, flavor);
+        if (!GulpServerConfig.MCA_AFFECTION_ENABLED.get()) return;
         if (hardNow && !entry.getBoolean("Safe")) return;
         if (info.getInt("Hearts") < GulpServerConfig.MCA_AFFECTION_HEARTS.get()) return;
         int left = entry.getInt("CommentIn") - 1;
@@ -774,6 +862,157 @@ public final class McaIntegration {
         String line = info.getInt("Times") >= 3 && p.getRandom().nextInt(4) == 0
                 ? REGULAR_LINE : pool[p.getRandom().nextInt(pool.length)];
         p.sendSystemMessage(Component.literal("<").append(StomachLogic.entryName(entry)).append("> " + line));
+    }
+
+    /**
+     * A prey villager with a personality, inside the player (soft mode): an arrogant one gloats, a flustered one stutters happily,
+     * a protective one fusses over how the player is doing, and while one is inside the player does not get hungry.
+     */
+    private static void flavorInside(ServerPlayer p, CompoundTag entry, Flavor flavor) {
+        if (flavor == Flavor.PROTECTIVE) { // no hunger while they are inside: whatever the food bar would lose is put back
+            net.minecraft.world.food.FoodData food = p.getFoodData();
+            if (entry.contains("LastFood")) {
+                if (food.getFoodLevel() < entry.getInt("LastFood")) food.setFoodLevel(entry.getInt("LastFood"));
+                if (food.getSaturationLevel() < entry.getFloat("LastSat")) food.setSaturation(entry.getFloat("LastSat"));
+            }
+            entry.putInt("LastFood", food.getFoodLevel());
+            entry.putFloat("LastSat", food.getSaturationLevel());
+        }
+        int left = entry.getInt("FlavorIn") - 1;
+        if (left > 0) {
+            entry.putInt("FlavorIn", left);
+            return;
+        }
+        entry.putInt("FlavorIn", 1200 + p.getRandom().nextInt(1200));
+        boolean needsCare = p.getFoodData().getFoodLevel() <= 12 || p.getHealth() <= p.getMaxHealth() * 0.5f;
+        String line = flavor == Flavor.PROTECTIVE && needsCare ? flavor.careLine() : flavor.insideLine();
+        if (line != null) p.sendSystemMessage(Component.literal("<").append(StomachLogic.entryName(entry)).append("> " + line));
+    }
+
+    // ------------------------------------------------------------------ eaten log
+
+    /** /gulp eaten: every villager you have swallowed, and how many times in soft and in hard mode. */
+    public static void showEaten(ServerPlayer p) {
+        Stomach s = StomachManager.get(p.getServer()).of(p.getUUID());
+        if (s.eaten.isEmpty()) {
+            p.sendSystemMessage(Component.literal("[Gulp] You haven't eaten any villagers yet."));
+            return;
+        }
+        java.util.List<CompoundTag> sorted = new ArrayList<>(s.eaten);
+        sorted.sort((a, b) -> (b.getInt("Soft") + b.getInt("Hard")) - (a.getInt("Soft") + a.getInt("Hard")));
+        p.sendSystemMessage(Component.literal("[Gulp] Villagers eaten: " + s.eatenTotal(false) + " soft, " + s.eatenTotal(true) + " hard ("
+                + s.eaten.size() + " different villagers).").withStyle(ChatFormatting.GOLD));
+        int shown = 0;
+        for (CompoundTag rec : sorted) {
+            if (shown++ >= 20) {
+                p.sendSystemMessage(Component.literal("...and " + (sorted.size() - 20) + " more.").withStyle(ChatFormatting.GRAY));
+                break;
+            }
+            p.sendSystemMessage(Component.literal(" - " + rec.getString("Name") + ": " + rec.getInt("Soft") + " soft, " + rec.getInt("Hard") + " hard")
+                    .withStyle(ChatFormatting.GRAY));
+        }
+    }
+
+    // ------------------------------------------------------------------ genetics
+
+    private static final Map<UUID, Long> PENDING_CHILDREN = new HashMap<>();
+
+    /** A villager joined the world: if it is a child that has not had its genetics yet, work them out once the parents are known. */
+    public static void watchChild(Entity e) {
+        if (!GulpServerConfig.MCA_ENABLED.get() || !active() || !isVillager(e) || !isProtectedChild(e)) return;
+        if (VillagerData.getFlag(e, KIND_KEY, "Genetic") || PENDING_CHILDREN.size() > 200) return;
+        PENDING_CHILDREN.putIfAbsent(e.getUUID(), e.level().getGameTime());
+    }
+
+    /**
+     * Every 2 seconds: gives a child its Pred / Prey / normal tag from its parents' tags. Each parent (a villager's kind, or a
+     * player's role: Pred, Prey, Both counts as either, Neither counts as normal) pulls the odds toward their own tag, so a child of
+     * two preds is very likely a pred. Done once (saved as "Genetic"), and only when MCA tells us who the parents are.
+     */
+    public static void tickGenetics(MinecraftServer server) {
+        if (PENDING_CHILDREN.isEmpty()) return;
+        long now = server.overworld().getGameTime();
+        for (UUID id : new ArrayList<>(PENDING_CHILDREN.keySet())) {
+            Entity child = null;
+            for (ServerLevel l : server.getAllLevels()) {
+                child = l.getEntity(id);
+                if (child != null) break;
+            }
+            long first = PENDING_CHILDREN.get(id);
+            if (child == null) {
+                if (now - first > 12000L) PENDING_CHILDREN.remove(id);
+                continue;
+            }
+            if (!isProtectedChild(child) || VillagerData.getFlag(child, KIND_KEY, "Genetic")) {
+                PENDING_CHILDREN.remove(id);
+                continue;
+            }
+            java.util.List<VoreType> parents = parentTags(child, server);
+            if (parents.isEmpty()) {
+                if (now - first > 2400L) { // two minutes and still no parents: leave this one as it is
+                    PENDING_CHILDREN.remove(id);
+                    LOGGER.info("Vore Mod: couldn't find the parents of child {}, so no genetics for them.", child.getName().getString());
+                }
+                continue;
+            }
+            int[] w = {20, 20, 20}; // pred, prey, normal
+            for (VoreType t : parents) w[t == VoreType.PRED ? 0 : t == VoreType.PREY ? 1 : 2] += 30;
+            int roll = new java.util.Random(id.getLeastSignificantBits() ^ 0x5DEECE66DL).nextInt(w[0] + w[1] + w[2]);
+            VoreType pick = roll < w[0] ? VoreType.PRED : roll < w[0] + w[1] ? VoreType.PREY : VoreType.NORMAL;
+            CompoundTag k = VillagerData.getCompound(child, KIND_KEY);
+            k.putBoolean("Pred", pick == VoreType.PRED);
+            k.putBoolean("Prey", pick == VoreType.PREY);
+            k.putBoolean("Normal", pick == VoreType.NORMAL);
+            k.putBoolean("Genetic", true);
+            VillagerData.put(child, KIND_KEY, k);
+            PENDING_CHILDREN.remove(id);
+            LOGGER.info("Vore Mod: child {} is a {} (parents: {}).", child.getName().getString(), pick, parents);
+        }
+    }
+
+    /** The kinds of a child's parents, read from MCA (empty if they can't be found). */
+    private static java.util.List<VoreType> parentTags(Entity child, MinecraftServer server) {
+        java.util.List<VoreType> out = new ArrayList<>();
+        try {
+            Object relationships = child.getClass().getMethod("getRelationships").invoke(child);
+            Method getParents = null;
+            for (Method m : relationships.getClass().getMethods()) {
+                if (m.getName().equals("getParents") && m.getParameterCount() == 0) getParents = m;
+            }
+            if (getParents == null) return out;
+            Object result = getParents.invoke(relationships);
+            Iterable<?> items = result instanceof java.util.stream.Stream<?> stream ? stream.toList()
+                    : result instanceof Iterable<?> iterable ? iterable : null;
+            if (items == null) return out;
+            for (Object o : items) {
+                VoreType t = null;
+                if (o instanceof ServerPlayer sp) t = roleTag(server, sp.getUUID());
+                else if (o instanceof Entity e && isVillager(e)) t = voreTypeOf(e);
+                else if (o instanceof UUID uuid) {
+                    ServerPlayer online = server.getPlayerList().getPlayer(uuid);
+                    if (online != null) t = roleTag(server, uuid);
+                    else for (ServerLevel l : server.getAllLevels()) {
+                        Entity e = l.getEntity(uuid);
+                        if (e != null && isVillager(e)) { t = voreTypeOf(e); break; }
+                    }
+                }
+                if (t != null) out.add(t);
+            }
+        } catch (Throwable t) {
+            problem("couldn't read a child's parents", t);
+        }
+        return out;
+    }
+
+    /** A player's tag for genetics, from their role. */
+    private static VoreType roleTag(MinecraftServer server, UUID player) {
+        Role role = StomachManager.get(server).of(player).role;
+        return switch (role) {
+            case PRED -> VoreType.PRED;
+            case PREY -> VoreType.PREY;
+            case BOTH -> (player.hashCode() & 1) == 0 ? VoreType.PRED : VoreType.PREY;
+            case NEITHER -> VoreType.NORMAL;
+        };
     }
 
     /** Every 5 seconds: a villager close to you who likes you enough may ask to be carried (safely: soft mode only). */
@@ -886,7 +1125,7 @@ public final class McaIntegration {
         for (VillagerPerk perk : VillagerPerk.values()) ranks[perk.ordinal()] = VillagerHolding.rankOf(e, perk);
         int points = VillagerHolding.pointsFree(e);
         net.minecraftforge.network.PacketDistributor.PacketTarget target = net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> p);
-        Net.CHANNEL.send(target, new VillagerInfoPacket(entityId, isAdultVillager(e), type, trait, ranks, points, level, VillagerHolding.xpOf(e), VillagerHolding.xpNeeded(level)));
+        Net.CHANNEL.send(target, new VillagerInfoPacket(entityId, isAdultVillager(e), type, trait, flavorOf(e).ordinal(), ranks, points, level, VillagerHolding.xpOf(e), VillagerHolding.xpNeeded(level)));
     }
 
     /** " | comfort lv 3" for pred villagers (they are the ones who comfort), nothing for the rest. */
@@ -950,7 +1189,7 @@ public final class McaIntegration {
 
     private static void makeComfortOffer(ServerPlayer p, LivingEntity villager, VillagerTrait trait, long now) {
         COMFORT_OFFERS.put(p.getUUID(), new Offer(villager.getUUID(), now + 600)); // 30 seconds to answer
-        String text = trait.comfortOfferLine();
+        String text = comfortOfferText(villager, trait);
         MutableComponent accept = Component.literal("[Accept]").withStyle(Style.EMPTY
                 .withColor(net.minecraft.ChatFormatting.GREEN).withBold(true)
                 .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/gulp comfort accept"))
@@ -1044,7 +1283,7 @@ public final class McaIntegration {
                 .withColor(net.minecraft.ChatFormatting.RED).withBold(true)
                 .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/gulp cuddle decline"))
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("No thank you"))));
-        p.sendSystemMessage(Component.literal("<").append(villager.getName()).append("> " + trait.cuddleOfferLine() + " ")
+        p.sendSystemMessage(Component.literal("<").append(villager.getName()).append("> " + cuddleOfferText(villager, trait) + " ")
                 .append(accept).append(" ").append(decline));
         p.playNotifySound(SoundEvents.VILLAGER_YES, SoundSource.NEUTRAL, 1f, 1f);
     }

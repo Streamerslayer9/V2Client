@@ -1,6 +1,8 @@
 package com.example.gulp;
 
 import net.minecraft.nbt.CompoundTag;
+import org.joml.Vector3f;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.ChatFormatting;
@@ -104,7 +106,7 @@ public final class VillagerHolding {
         return VillagerPerk.capacityFor(levelOf(villager), rankOf(villager, VillagerPerk.ROOMY_BELLY));
     }
 
-    private static int holdingCount(UUID villager) {
+    static int holdingCount(UUID villager) {
         int n = 0;
         for (Hold h : HELD.values()) if (h.villager.equals(villager)) n++;
         return n;
@@ -348,7 +350,7 @@ public final class VillagerHolding {
         }
         Net.CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), new HeldPacket(hostile ? 3 : 1, villager.getName().getString(), hostile && lethalHostile(p) ? 1f : 0f, hostile ? hostileChance(villager) : 0f));
         p.sendSystemMessage(Component.literal("<").append(villager.getName()).append("> " + (hostile ? McaIntegration.traitOf(villager).hostileGrabLine() : forced != null ? forced.enterLine()
-                : cuddle ? McaIntegration.traitOf(villager).cuddleHoldLine() : McaIntegration.traitOf(villager).holdLine())));
+                : McaIntegration.holdText(villager, cuddle))));
         return true;
     }
 
@@ -370,7 +372,7 @@ public final class VillagerHolding {
         if (h.nestedIn != null) { // the villager was let out of that stomach: they carry on holding you
             h.nestedIn = null;
             p.sendSystemMessage(Component.empty().append(v.getName()).append(" is out in the world again, and still has you in their tummy."));
-            p.sendSystemMessage(Component.literal("<").append(v.getName()).append("> " + (h.cuddle ? McaIntegration.traitOf(v).cuddleHoldLine() : McaIntegration.traitOf(v).holdLine())));
+            p.sendSystemMessage(Component.literal("<").append(v.getName()).append("> " + McaIntegration.holdText(v, h.cuddle)));
         }
         if (p.getCamera() != v) p.setCamera(v); // pressing sneak would make a spectator stop looking through their eyes
         if (h.ticks % 40 == 1) syncBelly(v); // refreshed now and then so anyone who walks up sees the belly too
@@ -379,14 +381,22 @@ public final class VillagerHolding {
         float scale = h.hostile ? 0f : h.forced == null ? 1f : h.forced.healScale(); // a villager who did not ask for you heals you less, or not at all
         if (h.ticks % 20 == 0 && scale > 0f) {
             float before = p.getHealth();
-            p.heal(healPerSecond(level, trait, rankOf(v, VillagerPerk.SOOTHING)) * scale);
+            p.heal(healPerSecond(level, trait, rankOf(v, VillagerPerk.SOOTHING)) * scale * McaIntegration.flavorOf(v).healMult);
             h.healed += Math.max(0f, p.getHealth() - before);
             if (level >= 5 && scale >= 1f) p.getFoodData().eat(1, 0.2f); // a well-practised villager feeds you too
         }
         int warm = rankOf(v, VillagerPerk.WARM_BELLY);
         if (warm > 0 && scale >= 1f && h.ticks % 40 == 0) p.getFoodData().eat(warm, 0.1f * warm); // Warm Belly: every 2 seconds
-        if (h.ticks % 400 == 300) { // now and then they say something
-            String idle = h.hostile ? trait.hostileIdleLine() : h.forced != null ? h.forced.idleLine() : trait.holdIdleLine();
+        Flavor flavor = h.hostile ? Flavor.NONE : McaIntegration.flavorOf(v);
+        if (flavor == Flavor.FLUSTERED && h.ticks % 8 == 0 && v.level() instanceof ServerLevel vl) { // blushing bright red
+            vl.sendParticles(new DustParticleOptions(new Vector3f(1.0f, 0.2f, 0.3f), 1.2f), v.getX(), v.getEyeY() - 0.15, v.getZ(), 3, 0.22, 0.08, 0.22, 0.0);
+        }
+        if (flavor == Flavor.PROTECTIVE && scale > 0f && h.ticks % 100 == 0) { // a protective belly: it keeps healing on top of the usual
+            p.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 140, 0, true, false));
+        }
+        int gap = h.hostile || h.forced != null ? 400 : flavor.chatterGap();
+        if (h.ticks % gap == gap - 100) { // now and then they say something
+            String idle = h.hostile ? trait.hostileIdleLine() : h.forced != null ? h.forced.idleLine() : McaIntegration.idleText(v, trait);
             p.sendSystemMessage(Component.literal("<").append(v.getName()).append("> " + idle));
         }
         int cuddleLimit = h.forced != null && h.forced.holdSeconds() > 0 ? h.forced.holdSeconds() * 20 : cuddleTicks(level);
@@ -503,7 +513,7 @@ public final class VillagerHolding {
         } else if (villager != null && thanked) {
             VillagerTrait trait = McaIntegration.traitOf(villager);
             p.sendSystemMessage(Component.literal("<").append(villager.getName()).append("> " + (h.forced != null ? h.forced.endLine()
-                    : h.cuddle ? trait.cuddleFinishLine() : trait.finishLine())));
+                    : McaIntegration.finishText(villager, trait, h.cuddle))));
         }
     }
 

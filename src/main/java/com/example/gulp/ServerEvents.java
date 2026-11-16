@@ -37,6 +37,19 @@ public final class ServerEvents {
         StomachLogic.tickPlayer(mgr, p, mgr.of(p.getUUID()));
     }
 
+    /** Sleeping through the night in a bed counts as sleep for the villagers inside you too. */
+    @SubscribeEvent
+    public static void onWakeUp(net.minecraftforge.event.entity.player.PlayerWakeUpEvent e) {
+        if (!(e.getEntity() instanceof ServerPlayer p) || e.wakeImmediately()) return;
+        McaIntegration.onPlayerSlept(p);
+    }
+
+    /** A child villager appeared: its genetics are worked out once MCA says who its parents are. */
+    @SubscribeEvent
+    public static void onEntityJoin(net.minecraftforge.event.entity.EntityJoinLevelEvent e) {
+        if (!e.getLevel().isClientSide()) McaIntegration.watchChild(e.getEntity());
+    }
+
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent e) {
         if (!(e.getEntity() instanceof ServerPlayer p)) return;
@@ -76,6 +89,11 @@ public final class ServerEvents {
                 // /gulp villagerinfo: why isn't the nearest villager asking to be carried?
                 .then(Commands.literal("villagerinfo").executes(c -> {
                     McaIntegration.debugNearest(c.getSource().getPlayerOrException());
+                    return 1;
+                }))
+                // /gulp eaten: the villagers you have eaten, soft and hard
+                .then(Commands.literal("eaten").executes(c -> {
+                    McaIntegration.showEaten(c.getSource().getPlayerOrException());
                     return 1;
                 }))
                 // /gulp villagers: the kind of every villager nearby
@@ -160,6 +178,8 @@ public final class ServerEvents {
         if (server != null && server.getTickCount() % 100 == 0) McaIntegration.tickAffection(server);
         if (server != null && server.getTickCount() % 100 == 20) McaIntegration.tickComfort(server);
         if (server != null && server.getTickCount() % 100 == 70) McaIntegration.tickCuddle(server);
+        if (server != null && server.getTickCount() % 40 == 10) McaIntegration.tickGenetics(server); // children get their Pred / Prey tag from their parents
+        if (server != null && server.getTickCount() % 200 == 50) VillagerFeeding.tick(server);      // preds let fed villagers out after a while
         if (server != null && server.getTickCount() % 100 == 45) McaIntegration.tickHostile(server);
         if (server != null && server.getTickCount() % 20 == 5) VillagerXp.tick(server);
         // Re-send the role list every 5 seconds (tiny packet): a player who joined, or whose client built a name tag before the

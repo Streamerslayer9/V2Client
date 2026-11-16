@@ -122,7 +122,7 @@ public final class StomachLogic {
             case 30 -> { // the stomach screen: pick where new prey goes
                 if (arg >= 0 && arg < Organ.COUNT && (arg == 0 || GulpServerConfig.MULTI_ORGANS_ENABLED.get())) {
                     s.activeOrgan = arg;
-                    StomachLogic.say(p, Component.literal("Swallowing into your " + Organ.byId(arg).lower() + " now."));
+                    StomachLogic.say(p, Component.literal("Swallowing into your " + Organ.byId(arg).place() + " now."));
                     mgr.setDirty();
                     sync(p, s);
                 }
@@ -188,6 +188,8 @@ public final class StomachLogic {
             case 22 -> VillagerStorage.open(p, arg); // the Perks screen: open the villager's item storage
             case 24 -> McaIntegration.forceSwallow(p, arg); // the Perks screen: Climb In (any adult villager)
             case 25 -> McaIntegration.askConvert(p, arg); // the Perks screen: Ask to be a Pred
+            case 40 -> VillagerFeeding.feed(p, arg); // the Perks screen of a pred villager: Feed a villager to them
+            case 41 -> VillagerFeeding.spit(p, arg); // the Perks screen of a pred villager: ask them to spit the fed villager up
             case 19 -> {
                 // First-join choice / Settings: which mod does the swallowing (arg = SwallowSystem ordinal).
                 SwallowSystem choice = SwallowSystem.byId(arg);
@@ -358,7 +360,7 @@ public final class StomachLogic {
         if (nested) for (ServerPlayer a : inside) size += PlayerHolding.sizeOf(a);
         String withInside = nested ? " with a player inside" : "";
         int organ = s.organ();
-        String where = Organ.byId(organ).lower();
+        String where = Organ.byId(organ).place();
         if (size > s.capacityOf(organ)) {
             StomachLogic.say(p, Component.literal("Too big for your " + where + withInside + "! (needs " + Stomach.fmtVolume(size) + ", capacity " + Stomach.fmtVolume(s.capacity()) + ")"));
             return false;
@@ -451,7 +453,7 @@ public final class StomachLogic {
         int organ = s.organ();
         Component msg = Component.literal("Gulp! Swallowed ").append(what);
         if (organ != Organ.STOMACH_ID) {
-            msg = msg.copy().append(" into your " + Organ.byId(organ).lower()
+            msg = msg.copy().append(" into your " + Organ.byId(organ).place()
                     + (organ == Organ.TAIL_ID ? " (it takes a while to reach your stomach)" : ""));
         }
         StomachLogic.say(p, msg);
@@ -837,7 +839,7 @@ public final class StomachLogic {
             added = w.addFreshEntity(e);
         }
         if (added) {
-            McaIntegration.onRelease(p, StomachManager.get(p.getServer()).of(p.getUUID()), e, entry.getInt("HeldTicks"));
+            McaIntegration.onRelease(p, StomachManager.get(p.getServer()).of(p.getUUID()), e, entry.getInt("HeldTicks"), entry);
         }
         return added;
     }

@@ -96,7 +96,7 @@ public final class PlayerHolding {
         Role victimRole = mgr.of(victim.getUUID()).role;
         if (!victimRole.canBeEaten()) return victimRole.cantBeSwallowedMessage();
         float size = sizeOf(victim);
-        String where = Organ.byId(s.organ()).lower();
+        String where = Organ.byId(s.organ()).place();
         if (size > s.capacityOf(s.organ())) {
             return Component.literal("Too big for your " + where + "! (needs " + Stomach.fmtVolume(size)
                     + ", capacity " + Stomach.fmtVolume(s.capacity()) + ")");
@@ -158,7 +158,7 @@ public final class PlayerHolding {
         victim.setGameMode(GameType.SPECTATOR);
         victim.setCamera(p);
         victim.sendSystemMessage(Component.literal("You were swallowed by ").append(p.getName())
-                .append(s.organ() == Organ.STOMACH_ID ? "" : " (their " + Organ.byId(s.organ()).lower() + ")").append(hard
+                .append(s.organ() == Organ.STOMACH_ID ? "" : " (their " + Organ.byId(s.organ()).place() + ")").append(hard
                 ? " (HARD mode). The Release key won't work: press your Struggle key (default R) to try to break free before you're digested."
                 : ". Press your Release key (default G) to get out whenever you like, or your Struggle key (default R) to rub the walls."));
         sendHeldState(victim, held, p, 0f);
