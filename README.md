@@ -216,7 +216,7 @@ reactions switch themselves off with one line in the log.
   player's stomach screen for that villager, whatever type they are: their stomach in their own look (wall, pattern, animated acid), how
   many they hold, and who is inside (the players they hold, the villagers you fed them). It has Perks (their perks screen), Settings (change
   their stomach look: the same colour, pattern and pulse options a player has), Climb In (moved here from the Perks screen), Storage (preds)
-  and Release villager (a pred holding villagers you fed them). A villager's look is saved with them, and a player they hold sees the inside of
+  and, on the right of each villager you fed them, a Release button for that villager. The buttons sit in one row. A villager's look is saved with them, and a player they hold sees the inside of
   the stomach in it. Code: VillagerStomachScreen, VillagerStomachPacket, VillagerLookEditPacket, VillagerLooks. Network protocol is now 19.
 - Villager bellies: while an MCA villager holds a player in their tummy (comfort, cuddle, Climb In, an angry grab), the villager gets a belly
   that grows with how many players they hold compared to what they can hold (Roomy Belly), and shrinks again when the player is out. It
