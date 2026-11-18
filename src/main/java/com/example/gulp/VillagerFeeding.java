@@ -203,13 +203,23 @@ final class VillagerFeeding {
 
     /** Ask the pred to let out the villagers they hold (arg = the pred's entity id). */
     static void spit(ServerPlayer p, int predId) {
+        spit(p, predId, -1);
+    }
+
+    /** A villager's own Release button on a pred's Stomach screen (action 45): packed = the pred's entity id * 64 + which fed villager. */
+    static void spitOne(ServerPlayer p, int packed) {
+        spit(p, packed >> 6, packed & 63);
+    }
+
+    /** @param only which fed villager to let out (their place in the list), or -1 for all of them */
+    private static void spit(ServerPlayer p, int predId, int only) {
         Entity pred = p.level().getEntity(predId);
         if (!(pred instanceof LivingEntity) || !McaIntegration.isVillager(pred) || p.distanceToSqr(pred) > RANGE * RANGE) {
             StomachLogic.say(p, Component.literal("Get closer to the villager first."));
             return;
         }
         ListTag list = fedOf(pred);
-        if (list.isEmpty()) {
+        if (list.isEmpty() || only >= list.size()) {
             say(p, pred.getName(), "I'm not holding anyone right now.");
             return;
         }
@@ -225,18 +235,31 @@ final class VillagerFeeding {
         }
         String yes = flavor.spitAcceptLine();
         say(p, pred.getName(), yes != null ? yes : "Alright, alright. Here they come.");
-        releaseAll(pred, p);
+        release(pred, p, only);
     }
 
     /** Lets every fed villager out next to the pred. @param asker the player to tell (may be null) */
     static void releaseAll(Entity pred, ServerPlayer asker) {
+        release(pred, asker, -1);
+    }
+
+    /** Lets out the fed villager at place `only` (or all of them when it is -1); anyone who could not be placed stays inside. */
+    static void release(Entity pred, ServerPlayer asker, int only) {
         ListTag list = fedOf(pred);
         if (list.isEmpty() || !(pred.level() instanceof ServerLevel w)) return;
         MinecraftServer server = w.getServer();
+        ListTag remaining = new ListTag();
         for (int i = 0; i < list.size(); i++) {
             CompoundTag rec = list.getCompound(i);
+            if (only >= 0 && i != only) {
+                remaining.add(rec);
+                continue;
+            }
             Entity e = EntityType.create(rec.getCompound("Entity"), w).orElse(null);
-            if (e == null) continue;
+            if (e == null) {
+                remaining.add(rec);
+                continue;
+            }
             double ang = (pred.getYRot() + 180f + (i - list.size() / 2.0) * 35.0) * Math.PI / 180.0;
             e.moveTo(pred.getX() - Math.sin(ang) * 1.2, pred.getY() + 0.3, pred.getZ() + Math.cos(ang) * 1.2, pred.getYRot() + 180f, 0f);
             if (!w.noCollision(e)) e.moveTo(pred.getX(), pred.getY() + 0.1, pred.getZ(), pred.getYRot() + 180f, 0f);
@@ -247,7 +270,10 @@ final class VillagerFeeding {
                 e.setUUID(UUID.randomUUID());
                 added = w.addFreshEntity(e);
             }
-            if (!added) continue;
+            if (!added) {
+                remaining.add(rec);
+                continue;
+            }
             ServerPlayer owner = asker;
             try {
                 ServerPlayer o = server.getPlayerList().getPlayer(UUID.fromString(rec.getString("Owner")));
@@ -263,7 +289,7 @@ final class VillagerFeeding {
                 say(owner, e.getName(), line);
             }
         }
-        saveFed(pred, new ListTag());
+        saveFed(pred, remaining);
     }
 
     // ------------------------------------------------------------------ never lose a villager

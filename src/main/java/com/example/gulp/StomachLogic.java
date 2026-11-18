@@ -192,6 +192,7 @@ public final class StomachLogic {
             case 25 -> McaIntegration.askConvert(p, arg); // the Perks screen: Ask to be a Pred
             case 42 -> McaIntegration.sendEaten(p); // the Eaten tab: open the list of villagers you have eaten
             case 41 -> VillagerFeeding.spitFromStorage(p, arg); // Release villager: a pred's Stomach screen (arg = their id) or open Storage (0)
+            case 45 -> VillagerFeeding.spitOne(p, arg);           // a fed villager's own Release button on a pred's Stomach screen
             case 43 -> McaIntegration.sendStomach(p, arg, true);  // the villager menu's Stomach button: open their Stomach screen
             case 44 -> McaIntegration.sendStomach(p, arg, false); // keep an open villager Stomach screen up to date
             case 19 -> {
