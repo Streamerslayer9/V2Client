@@ -232,8 +232,8 @@ reactions switch themselves off with one line in the log.
   is asleep or held by a sleeping villager the night is skipped like normal sleeping (sleeping percentage included): morning comes, rain
   clears, and you are rested (phantom timer reset, short regeneration, villagers inside you count as having slept).
 - Role switching asks first: in Settings, the Role button now only picks a role (it shows "Pred > Both"); the Confirm button next to it switches
-  to it, and picking Prey or Neither while you hold anyone asks "your stomach will be emptied, continue?". Emptying is now done 4 entries a tick
-  instead of all at once (the old cycle Pred > Prey > Both emptied everything at the Prey step and could crash the server).
+  to it, and picking Prey or Neither while you hold anyone asks "your stomach will be emptied, continue?". Emptying (a role change, Release all, or switching
+  to Flamevore with more than 6 inside) is now done 2 entries a tick, each at its own spot on a widening spiral around you, instead of all at once (the old cycle Pred > Prey > Both emptied everything at the Prey step and could crash the server).
 - Request Hard Swallow: a pred villager's Stomach screen has a Hard button (after a confirmation). A pred who likes you enough (arrogant 15
   hearts, confident 30, shy 50, flustered 60, protective 90) swallows you like an angry grab would (struggle out or be digested when the time is
   up), but nobody loses hearts. Needs your role to be Prey or Both. Unprompted hard swallows from angry preds are unchanged.
