@@ -119,9 +119,33 @@ public final class VillagerHolding {
      */
     static void syncBelly(Entity villager) {
         if (villager == null || villager.level().isClientSide) return;
-        int n = holdingCount(villager.getUUID()) + VillagerFeeding.fedCount(villager); // players they hold and villagers they were fed (or rescued)
-        float ratio = n <= 0 ? 0f : Math.min(1f, 0.45f + 0.55f * n / Math.max(1, capacityOf(villager)));
-        Net.CHANNEL.send(PacketDistributor.TRACKING_ENTITY.with(() -> villager), new BellyPacket(villager.getUUID(), ratio));
+        // To every player within 128 blocks (not only those the game says are "tracking" the villager), so nobody who can see them misses it.
+        BellyPacket packet = new BellyPacket(villager.getUUID(), bellyRatio(villager));
+        Net.CHANNEL.send(PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(
+                villager.getX(), villager.getY(), villager.getZ(), 128.0, villager.level().dimension())), packet);
+    }
+
+    /** How full this villager's belly is (0..1): the players they hold and the villagers fed to them or rescued, against how many they can hold. */
+    static float bellyRatio(Entity villager) {
+        int n = holdingCount(villager.getUUID()) + VillagerFeeding.fedCount(villager);
+        return n <= 0 ? 0f : Math.min(1f, 0.45f + 0.55f * n / Math.max(1, capacityOf(villager)));
+    }
+
+    /** /gulp belly: what the server thinks the nearest villager's belly is, and sends it again. If this says a belly but none shows, the problem is on the client. */
+    static void bellyReport(ServerPlayer p) {
+        LivingEntity best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (LivingEntity v : p.serverLevel().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(12.0), McaIntegration::isVillager)) {
+            double d = p.distanceToSqr(v);
+            if (d < bestDist) { best = v; bestDist = d; }
+        }
+        if (best == null) {
+            p.sendSystemMessage(Component.literal("[Gulp] No villager within 12 blocks."));
+            return;
+        }
+        syncBelly(best);
+        p.sendSystemMessage(Component.literal("[Gulp] " + best.getName().getString() + ": holding " + holdingCount(best.getUUID()) + " player(s), "
+                + VillagerFeeding.fedCount(best) + " fed villager(s), room for " + capacityOf(best) + ", belly " + Math.round(bellyRatio(best) * 100) + "% (sent again)"));
     }
 
     /** What the inside of this villager's stomach looks like to a held player: the villager's look, the other players they hold, the villagers they were fed. */

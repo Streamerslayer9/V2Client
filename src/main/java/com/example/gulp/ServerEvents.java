@@ -91,6 +91,11 @@ public final class ServerEvents {
                     McaIntegration.debugNearest(c.getSource().getPlayerOrException());
                     return 1;
                 }))
+                // /gulp belly: the nearest villager's belly as the server sees it
+                .then(Commands.literal("belly").executes(c -> {
+                    VillagerHolding.bellyReport(c.getSource().getPlayerOrException());
+                    return 1;
+                }))
                 // /gulp guards: guards and hurt villagers nearby, and whether a rescue would start
                 .then(Commands.literal("guards").executes(c -> {
                     GuardRescue.report(c.getSource().getPlayerOrException());
