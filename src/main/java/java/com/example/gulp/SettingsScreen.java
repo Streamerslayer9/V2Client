@@ -38,7 +38,7 @@ public class SettingsScreen extends Screen {
         roleButton.setMessage(Component.literal("Role: ").append(Component.literal(role.label).withStyle(st -> st.withColor(role.color & 0xFFFFFF)))
                 .append(pendingRole == null ? Component.empty() : Component.literal(" > ").append(Component.literal(pendingRole.label).withStyle(st -> st.withColor(pendingRole.color & 0xFFFFFF)))));
         if (confirmButton != null) {
-            confirmButton.visible = pendingRole != null;
+            confirmButton.active = pendingRole != null;
             confirmButton.setTooltip(pendingRole == null ? null : Tooltip.create(Component.literal(
                     "Switch to " + pendingRole.label + "." + (!pendingRole.canEat() ? " Your stomach will be emptied: everything inside you is let out." : ""))));
         }
@@ -99,10 +99,10 @@ public class SettingsScreen extends Screen {
             Role from = pendingRole != null ? pendingRole : ClientState.role();
             pendingRole = from.next() == ClientState.role() ? null : from.next();
             refresh();
-        }).bounds(x + 15, y + 43, W - 30 - 62, 19).build();
+        }).bounds(x + 15, y + 43, (W - 30) * 60 / 100, 19).build();
         confirmButton = Button.builder(Component.literal("Confirm"), btn -> confirmRole())
-                .bounds(x + 15 + W - 30 - 60, y + 43, 60, 19).build();
-        confirmButton.visible = false;
+                .bounds(x + 15 + (W - 30) * 60 / 100 + 4, y + 43, (W - 30) - (W - 30) * 60 / 100 - 4, 19).build();
+        confirmButton.active = false; // greyed until you pick a different role
 
         // Which mod does the swallowing (only changeable when Flamevore is installed). Kept on the server like your role.
         swallowButton = Button.builder(Component.empty(), btn -> {

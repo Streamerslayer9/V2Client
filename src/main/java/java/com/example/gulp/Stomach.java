@@ -72,6 +72,8 @@ public class Stomach {
 
     /** A role change that stops you holding anyone is letting everything out a few at a time (not all in one tick, which can crash the server). */
     public boolean emptying;
+    /** How many have been let out in this emptying (not saved): each goes to its own spot around the player. */
+    public int emptied;
 
     /** Villagers this player has swallowed: one record per villager {Id, Name, Soft, Hard}, for /gulp eaten. */
     public final List<CompoundTag> eaten = new ArrayList<>();

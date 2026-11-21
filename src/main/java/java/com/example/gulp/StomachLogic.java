@@ -138,17 +138,7 @@ public final class StomachLogic {
                     sound(p, GulpSound.SPIT);
                 }
             }
-            case 3 -> {
-                boolean any = false;
-                Iterator<CompoundTag> it = s.contents.iterator();
-                while (it.hasNext()) {
-                    if (release(p, it.next())) {
-                        it.remove();
-                        any = true;
-                    }
-                }
-                if (any) sound(p, GulpSound.SPIT);
-            }
+            case 3 -> letAllOut(p, s);
             case 4 -> {
                 int i = indexOf(s, arg);
                 if (i >= 0 && release(p, s.contents.get(i))) {
@@ -208,15 +198,7 @@ public final class StomachLogic {
                     s.swallowSystem = choice;
                     if (choice == SwallowSystem.FLAMEVORE) {
                         // Gulp stops holding anyone: whatever is inside is let out (same as changing to a role that can't swallow).
-                        boolean any = false;
-                        Iterator<CompoundTag> it = s.contents.iterator();
-                        while (it.hasNext()) {
-                            if (release(p, it.next())) {
-                                it.remove();
-                                any = true;
-                            }
-                        }
-                        if (any) sound(p, GulpSound.SPIT);
+                        letAllOut(p, s);
                         say(p, Component.literal("Swallowing system: Flamevore. Gulp's mob eating and belly are off; your level, perks and item storage stay."));
                     } else {
                         say(p, Component.literal("Swallowing system: Gulp."));
@@ -261,6 +243,7 @@ public final class StomachLogic {
                     // Someone who can't swallow can't keep holding anyone: everything is let out, a few each tick (tickPlayer),
                     // never all at once: thousands of entities in one tick can crash the server.
                     s.emptying = !newRole.canEat() && !s.contents.isEmpty();
+                    s.emptied = 0;
                     StomachLogic.say(p, Component.literal("Your role is now " + newRole.label + ". " + newRole.description));
                     RolesPacket.broadcast(p.getServer());
                 }
@@ -610,11 +593,12 @@ public final class StomachLogic {
     // ------------------------------------------------------------ per-tick
 
     public static void tickPlayer(StomachManager mgr, ServerPlayer p, Stomach s) {
-        if (s.emptying) { // letting everything out after a role change: 4 a tick
+        if (s.emptying) { // letting everything out after a role change: 2 a tick, each at its own spot around you
             int let = 0;
             Iterator<CompoundTag> out = s.contents.iterator();
-            while (out.hasNext() && let < 4) {
-                if (release(p, out.next())) {
+            while (out.hasNext() && let < 2) {
+                if (release(p, out.next(), s.emptied)) {
+                    s.emptied++;
                     out.remove();
                     let++;
                 }
@@ -839,12 +823,26 @@ public final class StomachLogic {
 
     /** @return false if the mob couldn't be recreated (so the caller keeps it instead of losing it) */
     public static boolean release(ServerPlayer p, CompoundTag entry) {
+        return release(p, entry, -1);
+    }
+
+    /**
+     * @param spot -1 for the usual place (in front of you), or the number of this one in a mass release: each goes to its own place on a
+     *             spiral around the player (a ring that widens, up to about 10 blocks), so hundreds are never stacked in one spot
+     */
+    public static boolean release(ServerPlayer p, CompoundTag entry, int spot) {
         if (PlayerHolding.isPlayerEntry(entry)) return PlayerHolding.releaseEntry(p, entry);
         ServerLevel w = p.serverLevel();
         Entity e = EntityType.create(entry.getCompound("Entity"), w).orElse(null);
         if (e == null) return false;
         Vec3 fwd = p.getViewVector(1.0f).scale(1.5);
         float yaw = p.getYRot() + 180f;
+        if (spot >= 0) {
+            double angle = spot * 2.399963; // the golden angle: neighbours never line up
+            double radius = Math.min(10.0, 1.5 + Math.sqrt(spot) * 0.7);
+            fwd = new Vec3(Math.cos(angle) * radius, 0.0, Math.sin(angle) * radius);
+            yaw = (float) (angle * 180.0 / Math.PI);
+        }
         e.moveTo(p.getX() + fwd.x, p.getY() + 0.5, p.getZ() + fwd.z, yaw, 0f);
         if (!w.noCollision(e)) {
             // Not enough room in front of you (a wall, say): put it where you're standing instead of inside a block.
@@ -863,11 +861,34 @@ public final class StomachLogic {
         return added;
     }
 
+    /**
+     * Lets everything out. A few go out at once (as before); a lot go out 2 a tick, each at its own spot around the player (tickPlayer),
+     * never all in one tick and one place: that can crash the game.
+     */
+    private static void letAllOut(ServerPlayer p, Stomach s) {
+        if (s.contents.size() > 6) {
+            s.emptying = true;
+            s.emptied = 0;
+            say(p, Component.literal("Letting everyone out, a few at a time..."));
+            return;
+        }
+        boolean any = false;
+        Iterator<CompoundTag> it = s.contents.iterator();
+        while (it.hasNext()) {
+            if (release(p, it.next())) {
+                it.remove();
+                any = true;
+            }
+        }
+        if (any) sound(p, GulpSound.SPIT);
+    }
+
     /** Called when a player dies: let everything out so nothing is lost. */
     public static void releaseAll(ServerPlayer p) {
         StomachManager mgr = StomachManager.get(p.getServer());
         Stomach s = mgr.of(p.getUUID());
-        s.contents.removeIf(e -> release(p, e));
+        int[] spot = {0};
+        s.contents.removeIf(e -> release(p, e, spot[0]++)); // each at its own place around where you fell
         mgr.setDirty();
         sync(p, s);
     }
